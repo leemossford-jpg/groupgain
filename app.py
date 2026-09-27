@@ -190,18 +190,20 @@ def admin_reset_password(req_id):
     
     return render_template('admin_reset.html', req=req)
 
-# === SHARE / QR — FIXED FOR RENDER ===
+# === SHARE / QR — FINAL FIXED FOR RENDER ===
 @app.route('/share')
 @login_required
 def share_page():
     try:
-        # Use Render's public URL instead of local IP
         base = request.host_url.rstrip('/')
         signup_url = f"{base}/signup"
         
         qr_img = qrcode.make(signup_url)
         buffered = BytesIO()
-        qr_img.save(buffered, format="PNG")
+        
+        # ✅ FIXED — different save method that works everywhere
+        qr_img.save(buffered)
+        buffered.seek(0)
         qr_base64 = base64.b64encode(buffered.getvalue()).decode()
         
         return render_template('share.html',
@@ -209,7 +211,7 @@ def share_page():
             qr_code_data=qr_base64
         )
     except Exception as e:
-        flash(f'QR generation error: {str(e)}', 'error')
+        flash(f'QR error: {str(e)}', 'error')
         return redirect(url_for('dashboard'))
 
 # === FEED ===
