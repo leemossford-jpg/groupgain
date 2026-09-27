@@ -10,12 +10,10 @@ import qrcode
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
-
 if "DATABASE_URL" in os.environ:
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(basedir, 'groupgain.db')}"
-
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "groupgain_secure_2026")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -42,6 +40,7 @@ with app.app_context():
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# ✅ HELPERS DEFINED FIRST
 def get_base_url():
     return os.environ.get("RENDER_EXTERNAL_URL", request.host_url.rstrip("/"))
 
@@ -53,6 +52,7 @@ def get_targets_safe(user):
         db.session.commit()
     return t
 
+# ✅ ROUTES
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if current_user.is_authenticated:
@@ -154,9 +154,12 @@ def targets():
 @login_required
 def share():
     url = get_base_url() + "/signup"
-    buf = BytesIO()
-    qrcode.make(url).save(buf, "PNG")
-    qr = base64.b64encode(buf.getvalue()).decode()
+    try:
+        buf = BytesIO()
+        qrcode.make(url).save(buf, "PNG")
+        qr = base64.b64encode(buf.getvalue()).decode()
+    except:
+        qr = None
     return render_template("share.html", signup_url=url, qr_data=qr)
 
 @app.route("/feed")
