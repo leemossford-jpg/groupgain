@@ -1,6 +1,7 @@
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
+
 db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
@@ -14,8 +15,8 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     posts = db.relationship('FeedPost', backref='author', cascade="all, delete-orphan", lazy=True)
     entries = db.relationship('DailyEntry', backref='user', cascade="all, delete-orphan", lazy=True)
-    targets = db.relationship('UserTarget', backref='user', uselist=False, cascade="all, delete-orphan")
-    chat_messages = db.relationship('ChatMessage', backref='author', cascade="all, delete-orphan', lazy=True)
+    targets = db.relationship('UserTarget', backref='user', cascade="all, delete-orphan", lazy=True)
+    chat_messages = db.relationship('ChatMessage', backref='author', cascade="all, delete-orphan", lazy=True)
 
 class DailyEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
