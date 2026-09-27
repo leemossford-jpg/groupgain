@@ -145,6 +145,9 @@
         <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
             📊 Dashboard
         </a>
+        <a href="{{ url_for('profile', username=current_user.username) }}" class="{% if 'profile' in request.endpoint %}active{% endif %}">
+            👤 My Profile
+        </a>
         <a href="{{ url_for('calendar_view') }}" class="{% if 'calendar' in request.endpoint %}active{% endif %}">
             📅 Calendar
         </a>
@@ -166,7 +169,6 @@
             <a href="{{ url_for('logout') }}" class="logout">🚪 Logout</a>
         </div>
     </nav>
-
     <main class="main">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
