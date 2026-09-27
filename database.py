@@ -8,14 +8,15 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
-    bio = db.Column(db.Text, default="")
+    bio = db.Column(db.Text, default="No bio yet...")
     profile_pic = db.Column(db.String(200), default="default.png")
     is_approved = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
     posts = db.relationship('FeedPost', backref='author', cascade="all, delete-orphan", lazy=True)
-    entries = db.relationship('DailyEntry', backref='user', cascade="all, delete-orphan", lazy=True)
-    targets = db.relationship('UserTarget', backref='user', cascade="all, delete-orphan", lazy=True)
+    entries = db.relationship('DailyEntry', backref='owner', cascade="all, delete-orphan", lazy=True)
+    targets = db.relationship('UserTarget', backref='user', cascade="all, delete-orphan', uselist=False)
     chat_messages = db.relationship('ChatMessage', backref='author', cascade="all, delete-orphan", lazy=True)
 
 class DailyEntry(db.Model):
@@ -28,7 +29,7 @@ class DailyEntry(db.Model):
 
 class UserTarget(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     daily_target = db.Column(db.Float, default=0.0)
     monthly_target = db.Column(db.Float, default=0.0)
 
@@ -36,7 +37,7 @@ class FeedPost(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    post_type = db.Column(db.String(20), default="status")
+    post_type = db.Column(db.String(30), default="status")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class ChatMessage(db.Model):
