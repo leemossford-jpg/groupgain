@@ -35,6 +35,58 @@ login_manager.login_message = 'Please log in to access GroupGain.'
 from database import db, User, DailyEntry, UserTarget, FeedPost, Comment, PasswordResetRequest, ChatMessage
 db.init_app(app)
 
+# ==============================================
+# ONE-TIME FULL DATABASE RESET — REMOVE AFTER FIRST DEPLOY
+# ==============================================
+with app.app_context():
+    # Drop ALL tables and recreate fresh
+    db.drop_all()
+    db.create_all()
+    print("✅ Database fully reset & rebuilt!")
+    
+    # Create fresh admin account
+    if not User.query.filter_by(username='admin').first():
+        admin_pass = bcrypt.generate_password_hash('Admin123!').decode('utf-8')
+        admin = User(username='admin', password_hash=admin_pass, 
+                     is_approved=True, is_admin=True, bio="GroupGain Founder 👑")
+        db.session.add(admin)
+        db.session.commit()
+        # Create targets for admin
+        db.session.add(UserTarget(user_id=admin.id, daily_target=0.0, monthly_target=0.0))
+        db.session.commit()
+        print("✅ Admin created: admin / Admin123! — CHANGE THIS PASSWORD!")
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def get_base_url():
+    if 'RENDER' in os.environ:
+        host = request.headers.get('X-Forwarded-Host', '')
+        if host:
+            return f"https://{host}"
+    return request.host_url.rstrip('/')
+
+def get_targets_safe(user):
+    try:
+        t = UserTarget.query.filter_by(user_id=user.id).first()
+        if not t:
+            t = UserTarget(user_id=user.id, daily_target=0.0, monthly_target=0.0)
+            db.session.add(t)
+            db.session.commit()
+        return t
+    except Exception:
+        db.session.rollback()
+        class FallbackTargets:
+            daily_target = 0.0
+            monthly_target = 0.0
+        return FallbackTargets()
+
+
 # === DASHBOARD — Fixed & Crash-Proof ===
 @app.route('/')
 @login_required
@@ -43,18 +95,7 @@ def dashboard():
     month_start = date(today.year, today.month, 1)
     
     # Get or create targets safely
-    try:
-        t = UserTarget.query.filter_by(user_id=current_user.id).first()
-        if not t:
-            t = UserTarget(user_id=current_user.id, daily_target=0.0, monthly_target=0.0)
-            db.session.add(t)
-            db.session.commit()
-    except Exception:
-        db.session.rollback()
-        class FallbackTargets:
-            daily_target = 0.0
-            monthly_target = 0.0
-        t = FallbackTargets()
+    t = get_targets_safe(current_user)
     
     # Today's total — if anything fails, show 0
     try:
