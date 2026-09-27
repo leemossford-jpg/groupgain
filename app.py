@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
+from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from datetime import datetime, date
@@ -43,13 +43,29 @@ def load_user(user_id):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# === HELPER: Get correct base URL on Render ===
+# === HELPER: Correct URL on Render ===
 def get_base_url():
     if 'RENDER' in os.environ:
         host = request.headers.get('X-Forwarded-Host', '')
         if host:
             return f"https://{host}"
     return request.host_url.rstrip('/')
+
+# === HELPER: Safe targets get ===
+def get_targets_safe(user):
+    if not hasattr(user, 'targets') or not user.targets:
+        try:
+            t = UserTarget(user_id=user.id, daily_target=0.0, monthly_target=0.0)
+            db.session.add(t)
+            db.session.commit()
+            return t
+        except Exception:
+            db.session.rollback()
+            class FallbackTargets:
+                daily_target = 0.0
+                monthly_target = 0.0
+            return FallbackTargets()
+    return user.targets
 
 with app.app_context():
     db.create_all()
@@ -58,11 +74,10 @@ with app.app_context():
         admin = User(username='admin', password_hash=admin_pass, is_approved=True, is_admin=True, bio="GroupGain Founder 👑")
         db.session.add(admin)
         db.session.commit()
-        db.session.add(UserTarget(user_id=admin.id, daily_target=500.0, monthly_target=10000.0))
-        db.session.commit()
+        get_targets_safe(admin)
         print("✅ Admin created: admin / Admin123! — CHANGE THIS AFTER FIRST LOGIN!")
 
-# === AUTH ROUTES ===
+# === AUTH ===
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if current_user.is_authenticated:
@@ -77,8 +92,7 @@ def signup():
         new_user = User(username=username, password_hash=hashed_pw, is_approved=False, bio="New to GroupGain! 🎉")
         db.session.add(new_user)
         db.session.commit()
-        db.session.add(UserTarget(user_id=new_user.id, daily_target=0.0, monthly_target=0.0))
-        db.session.commit()
+        get_targets_safe(new_user)
         flash('Account created! Waiting for admin approval.', 'success')
         return redirect(url_for('login'))
     return render_template('signup.html')
@@ -108,7 +122,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash('You have been logged out', 'success')
+    flash('Logged out', 'success')
     return redirect(url_for('login'))
 
 # === FORGOT PASSWORD ===
@@ -124,7 +138,7 @@ def forgot_password():
             if not existing:
                 db.session.add(PasswordResetRequest(user_id=user.id))
                 db.session.commit()
-            flash('Request sent to admin — you will be notified when approved', 'success')
+            flash('Request sent to admin', 'success')
         else:
             flash('Username not found', 'error')
         return redirect(url_for('forgot_password'))
@@ -136,8 +150,8 @@ def list_reset_requests():
     if not current_user.is_admin:
         flash('Admin only!', 'error')
         return redirect(url_for('dashboard'))
-    requests = PasswordResetRequest.query.filter_by(is_resolved=False).order_by(PasswordResetRequest.created_at.desc()).all()
-    return render_template('reset_requests.html', requests=requests)
+    reqs = PasswordResetRequest.query.filter_by(is_resolved=False).order_by(PasswordResetRequest.created_at.desc()).all()
+    return render_template('reset_requests.html', requests=reqs)
 
 @app.route('/admin/approve-reset/<int:req_id>', methods=['POST'])
 @login_required
@@ -146,7 +160,7 @@ def approve_reset(req_id):
     req = PasswordResetRequest.query.get_or_404(req_id)
     req.is_resolved = True
     db.session.commit()
-    flash(f'✅ Password reset approved for {req.user.username}', 'success')
+    flash(f'✅ Approved for {req.user.username}', 'success')
     return redirect(url_for('list_reset_requests'))
 
 @app.route('/admin/reject-reset/<int:req_id>', methods=['POST'])
@@ -156,7 +170,7 @@ def reject_reset(req_id):
     req = PasswordResetRequest.query.get_or_404(req_id)
     db.session.delete(req)
     db.session.commit()
-    flash('Reset request rejected', 'success')
+    flash('Rejected', 'success')
     return redirect(url_for('list_reset_requests'))
 
 # === CHANGE PASSWORD ===
@@ -168,21 +182,21 @@ def change_password():
         new_pw = request.form.get('new_password', '')
         confirm_pw = request.form.get('confirm_password', '')
         if not bcrypt.check_password_hash(current_user.password_hash, old_pw):
-            flash('Current password is incorrect', 'error')
+            flash('Current password incorrect', 'error')
             return redirect(url_for('change_password'))
         if new_pw != confirm_pw:
-            flash('New passwords do not match', 'error')
+            flash('Passwords do not match', 'error')
             return redirect(url_for('change_password'))
         if len(new_pw) < 6:
-            flash('Password must be at least 6 characters', 'error')
+            flash('Min 6 characters', 'error')
             return redirect(url_for('change_password'))
         current_user.password_hash = bcrypt.generate_password_hash(new_pw).decode('utf-8')
         db.session.commit()
-        flash('✅ Password updated successfully!', 'success')
+        flash('✅ Password updated', 'success')
         return redirect(url_for('dashboard'))
     return render_template('change_password.html')
 
-# === SHARE / QR CODE — FIXED FOR RENDER ✅ ===
+# === SHARE / QR ===
 @app.route('/share')
 @login_required
 def share_page():
@@ -195,10 +209,10 @@ def share_page():
         qr_img.save(buf, format='PNG')
         qr_data = base64.b64encode(buf.getvalue()).decode()
     except Exception as e:
-        flash(f'QR generation note: {e}', 'info')
+        flash(f'QR note: {e}', 'info')
     return render_template('share.html', signup_url=signup_url, qr_data=qr_data)
 
-# === FEED & COMMENTS ===
+# === FEED ===
 @app.route('/feed')
 @login_required
 def feed():
@@ -212,7 +226,7 @@ def post_status():
     if content:
         db.session.add(FeedPost(user_id=current_user.id, content=content, post_type='status'))
         db.session.commit()
-        flash('Posted! ✅', 'success')
+        flash('Posted ✅', 'success')
     return redirect(url_for('feed'))
 
 @app.route('/post/<int:post_id>/comment', methods=['POST'])
@@ -233,7 +247,7 @@ def delete_post(post_id):
         abort(403)
     db.session.delete(post)
     db.session.commit()
-    flash('Post deleted', 'success')
+    flash('Deleted', 'success')
     return redirect(url_for('feed'))
 
 # === CHAT ===
@@ -246,13 +260,13 @@ def send_chat():
         db.session.commit()
     return redirect(url_for('dashboard'))
 
-# === PROFILES — FIXED ✅ ===
+# === PROFILE ===
 @app.route('/profile/<username>')
 @login_required
 def view_profile(username):
     user = User.query.filter_by(username=username).first_or_404()
     if not user.is_approved and not current_user.is_admin:
-        flash('This profile is not yet approved', 'error')
+        flash('Not approved yet', 'error')
         return redirect(url_for('dashboard'))
 
     today = date.today()
@@ -266,18 +280,15 @@ def view_profile(username):
 
     prev_m, prev_y = (month-1, year) if month > 1 else (12, year-1)
     next_m, next_y = (month+1, year) if month < 12 else (1, year+1)
-
     month_start = date(year, month, 1)
     month_end = date(year, month, calendar.monthrange(year, month)[1])
     first_day_current = date(today.year, today.month, 1)
 
-    all_entries = DailyEntry.query.filter_by(user_id=user.id).all()
     month_entries_current = DailyEntry.query.filter(
         DailyEntry.user_id == user.id,
         DailyEntry.entry_date >= first_day_current
     ).all()
     month_total = round(sum((e.profit_loss or 0) for e in month_entries_current), 2)
-    total_entries = len(all_entries)
 
     cal_entries = DailyEntry.query.filter(
         DailyEntry.user_id == user.id,
@@ -295,7 +306,6 @@ def view_profile(username):
     losing_days = [v for v in daily_totals.values() if v < 0]
     avg_win = round(sum(winning_days) / len(winning_days), 2) if winning_days else 0.00
     avg_loss = round(sum(losing_days) / len(losing_days), 2) if losing_days else 0.00
-
     total_days = len(winning_days) + len(losing_days)
     win_rate = round((len(winning_days) / total_days * 100), 1) if total_days > 0 else 0.0
 
@@ -304,21 +314,12 @@ def view_profile(username):
     for week in cal:
         for day in week:
             if day == 0: continue
-            d = date(year, month, day)
-            t = daily_totals.get(d, 0)
+            t = daily_totals.get(date(year, month, day), 0)
             if t > 0:
                 streak += 1
                 max_streak = max(max_streak, streak)
             else:
                 streak = 0
-
-    # Ensure user has targets
-    if not hasattr(user, 'targets') or not user.targets:
-        try:
-            db.session.add(UserTarget(user_id=user.id, daily_target=0.0, monthly_target=0.0))
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
 
     posts = FeedPost.query.filter_by(user_id=user.id).order_by(FeedPost.created_at.desc()).all()
 
@@ -333,7 +334,7 @@ def view_profile(username):
         month_total=month_total,
         avg_win=avg_win, avg_loss=avg_loss,
         win_rate=win_rate, streak=max_streak,
-        total_entries=total_entries,
+        total_entries=DailyEntry.query.filter_by(user_id=user.id).count(),
         posts=posts
     )
 
@@ -341,67 +342,48 @@ def view_profile(username):
 @login_required
 def my_profile():
     if request.method == 'POST':
-        bio = request.form.get('bio', '').strip()
-        current_user.bio = bio
+        current_user.bio = request.form.get('bio', '').strip()
         if 'avatar' in request.files:
-            file = request.files['avatar']
-            if file and allowed_file(file.filename):
-                ext = file.filename.rsplit('.', 1)[1].lower()
+            f = request.files['avatar']
+            if f and allowed_file(f.filename):
+                ext = f.filename.rsplit('.', 1)[1].lower()
                 fn = f"user_{current_user.id}_{int(datetime.utcnow().timestamp())}.{ext}"
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], fn))
+                f.save(os.path.join(app.config['UPLOAD_FOLDER'], fn))
                 current_user.profile_pic = fn
         db.session.commit()
         flash('Profile updated ✅', 'success')
         return redirect(url_for('view_profile', username=current_user.username))
     return render_template('my_profile.html')
 
-# === TARGETS — FIXED ✅ ===
+# === TARGETS ===
 @app.route('/targets', methods=['GET', 'POST'])
 @login_required
 def my_targets():
-    if not hasattr(current_user, 'targets') or not current_user.targets:
+    t = get_targets_safe(current_user)
+    if request.method == 'POST' and current_user.is_admin:
         try:
-            db.session.add(UserTarget(user_id=current_user.id, daily_target=0.0, monthly_target=0.0))
+            dt = float(request.form.get('daily_target', 0))
+            mt = float(request.form.get('monthly_target', 0))
+            for u in User.query.filter_by(is_approved=True).all():
+                ut = get_targets_safe(u)
+                ut.daily_target = dt
+                ut.monthly_target = mt
             db.session.commit()
-        except Exception:
+            flash(f'✅ Updated: Daily £{dt:.2f} | Monthly £{mt:.2f}', 'success')
+        except Exception as e:
             db.session.rollback()
+            flash(f'Error: {e}', 'error')
+    return render_template('targets.html',
+        daily_target=getattr(t, 'daily_target', 0.0),
+        monthly_target=getattr(t, 'monthly_target', 0.0)
+    )
 
-    if request.method == 'POST':
-        if current_user.is_admin:
-            try:
-                dt = float(request.form.get('daily_target', 0))
-                mt = float(request.form.get('monthly_target', 0))
-                users = User.query.filter_by(is_approved=True).all()
-                for user in users:
-                    if not hasattr(user, 'targets') or not user.targets:
-                        ut = UserTarget(user_id=user.id, daily_target=dt, monthly_target=mt)
-                        db.session.add(ut)
-                    else:
-                        user.targets.daily_target = dt
-                        user.targets.monthly_target = mt
-                db.session.commit()
-                flash(f'✅ Group targets updated: Daily £{dt:.2f} | Monthly £{mt:.2f}', 'success')
-            except Exception as e:
-                db.session.rollback()
-                flash(f'Error saving targets: {str(e)}', 'error')
-        else:
-            flash('Only admin can change targets', 'error')
-
-    dt_val = 0.0
-    mt_val = 0.0
-    if hasattr(current_user, 'targets') and current_user.targets:
-        dt_val = getattr(current_user.targets, 'daily_target', 0.0)
-        mt_val = getattr(current_user.targets, 'monthly_target', 0.0)
-
-    return render_template('targets.html', daily_target=dt_val, monthly_target=mt_val)
-
-# === CALENDAR — FULLY FIXED ✅ ===
+# === CALENDAR ===
 @app.route('/calendar')
 @app.route('/calendar/<int:year>/<int:month>')
 @login_required
 def calendar_view(year=None, month=None):
     today = date.today()
-    
     try:
         if year is None: year = today.year
         if month is None: month = today.month
@@ -411,13 +393,11 @@ def calendar_view(year=None, month=None):
         year, month = today.year, today.month
 
     show_weekends = request.args.get('show_weekends', 'on') == 'on'
-
     prev_m, prev_y = (month-1, year) if month > 1 else (12, year-1)
     next_m, next_y = (month+1, year) if month < 12 else (1, year+1)
-
     month_start = date(year, month, 1)
     month_end = date(year, month, calendar.monthrange(year, month)[1])
-    
+
     entries = DailyEntry.query.filter(
         DailyEntry.user_id == current_user.id,
         DailyEntry.entry_date >= month_start,
@@ -427,26 +407,14 @@ def calendar_view(year=None, month=None):
     daily_totals = {}
     entry_map = {}
     for e in entries:
-        try:
-            ed = e.entry_date
-            if ed not in daily_totals:
-                daily_totals[ed] = 0
-                entry_map[ed] = []
-            daily_totals[ed] += (e.profit_loss or 0)
-            entry_map[ed].append(e)
-        except Exception:
-            continue
+        ed = e.entry_date
+        if ed not in daily_totals:
+            daily_totals[ed] = 0
+            entry_map[ed] = []
+        daily_totals[ed] += e.profit_loss or 0
+        entry_map[ed].append(e)
 
-    if not hasattr(current_user, 'targets') or not current_user.targets:
-        try:
-            db.session.add(UserTarget(user_id=current_user.id, daily_target=0.0, monthly_target=0.0))
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-
-    dt = 0.0
-    if hasattr(current_user, 'targets') and current_user.targets:
-        dt = getattr(current_user.targets, 'daily_target', 0.0)
+    t = get_targets_safe(current_user)
 
     return render_template('calendar.html',
         today=today, year=year, month=month,
@@ -456,31 +424,28 @@ def calendar_view(year=None, month=None):
         entry_map=entry_map,
         prev_year=prev_y, prev_month=prev_m,
         next_year=next_y, next_month=next_m,
-        daily_target=dt,
+        daily_target=getattr(t, 'daily_target', 0.0),
         show_weekends=show_weekends
     )
 
-# === ADD / EDIT ENTRY ===
+# === ENTRY ADD/EDIT/DELETE ===
 @app.route('/entry/add', methods=['POST'])
 @login_required
 def add_entry():
     try:
-        ed_str = request.form.get('entry_date')
-        ed = datetime.strptime(ed_str, '%Y-%m-%d').date()
+        ed = datetime.strptime(request.form.get('entry_date'), '%Y-%m-%d').date()
         pl = float(request.form.get('profit_loss', 0))
         notes = request.form.get('notes', '').strip()
-        entry = DailyEntry(user_id=current_user.id, entry_date=ed, profit_loss=pl, notes=notes)
-        db.session.add(entry)
-        db.session.flush()
+        db.session.add(DailyEntry(user_id=current_user.id, entry_date=ed, profit_loss=pl, notes=notes))
         sign = '+' if pl >= 0 else ''
-        post_content = f"📊 Posted result: {sign}£{pl:.2f} on {ed}"
-        if notes: post_content += f"\n💬 {notes}"
-        db.session.add(FeedPost(user_id=current_user.id, content=post_content, post_type='result'))
+        content = f"📊 Posted: {sign}£{pl:.2f} on {ed}"
+        if notes: content += f"\n💬 {notes}"
+        db.session.add(FeedPost(user_id=current_user.id, content=content, post_type='result'))
         db.session.commit()
         flash(f'Added: {sign}£{pl:.2f} ✅', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error adding entry: {str(e)}', 'error')
+        flash(f'Error: {e}', 'error')
     return redirect(url_for('calendar_view'))
 
 @app.route('/entry/<int:entry_id>/edit', methods=['GET', 'POST'])
@@ -494,10 +459,10 @@ def edit_entry(entry_id):
             entry.profit_loss = float(request.form.get('profit_loss', 0))
             entry.notes = request.form.get('notes', '').strip()
             db.session.commit()
-            flash('Entry updated ✅', 'success')
+            flash('Updated ✅', 'success')
         except Exception as e:
             db.session.rollback()
-            flash(f'Error updating: {str(e)}', 'error')
+            flash(f'Error: {e}', 'error')
         return redirect(url_for('calendar_view', year=entry.entry_date.year, month=entry.entry_date.month))
     return render_template('edit_entry.html', entry=entry)
 
@@ -511,32 +476,29 @@ def delete_entry(entry_id):
         y, m = entry.entry_date.year, entry.entry_date.month
         db.session.delete(entry)
         db.session.commit()
-        flash('Entry deleted', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error deleting: {str(e)}', 'error')
+        flash('Deleted', 'success')
+    except Exception:
         y, m = date.today().year, date.today().month
     return redirect(url_for('calendar_view', year=y, month=m))
 
-# === ADMIN CONTROL PANEL ===
+# === ADMIN SETTINGS — FIXED ✅ ===
 @app.route('/admin/settings')
 @login_required
 def admin_settings():
     if not current_user.is_admin:
         flash('Admin only!', 'error')
         return redirect(url_for('dashboard'))
-    total_users = User.query.count()
-    approved_users = User.query.filter_by(is_approved=True).count()
-    pending_users = User.query.filter_by(is_approved=False).count()
-    total_entries = DailyEntry.query.count()
-    admin_count = User.query.filter_by(is_admin=True).count()
-    return render_template('admin_settings.html',
-        total_users=total_users,
-        approved_users=approved_users,
-        pending_users=pending_users,
-        total_entries=total_entries,
-        admin_count=admin_count
-    )
+    try:
+        return render_template('admin_settings.html',
+            total_users=User.query.count(),
+            approved_users=User.query.filter_by(is_approved=True).count(),
+            pending_users=User.query.filter_by(is_approved=False).count(),
+            total_entries=DailyEntry.query.count(),
+            admin_count=User.query.filter_by(is_admin=True).count()
+        )
+    except Exception as e:
+        flash(f'Error loading admin panel: {e}', 'error')
+        return redirect(url_for('dashboard'))
 
 @app.route('/admin/approve/<int:user_id>', methods=['POST'])
 @login_required
@@ -544,10 +506,9 @@ def approve_user(user_id):
     if not current_user.is_admin: abort(403)
     user = User.query.get_or_404(user_id)
     user.is_approved = True
-    if not hasattr(user, 'targets') or not user.targets:
-        db.session.add(UserTarget(user_id=user.id, daily_target=500.0, monthly_target=10000.0))
+    get_targets_safe(user)
     db.session.commit()
-    flash(f'✅ {user.username} approved!', 'success')
+    flash(f'✅ {user.username} approved', 'success')
     return redirect(url_for('admin_settings'))
 
 @app.route('/admin/reject/<int:user_id>', methods=['POST'])
@@ -570,7 +531,7 @@ def remove_user(user_id):
         return redirect(url_for('admin_settings'))
     db.session.delete(user)
     db.session.commit()
-    flash(f'{user.username} removed from app', 'success')
+    flash(f'{user.username} removed', 'success')
     return redirect(url_for('admin_settings'))
 
 @app.route('/admin/toggle-admin/<int:user_id>', methods=['POST'])
@@ -579,12 +540,11 @@ def toggle_admin(user_id):
     if not current_user.is_admin: abort(403)
     user = User.query.get_or_404(user_id)
     if user.id == current_user.id:
-        flash('Cannot change your own admin status', 'error')
+        flash('Cannot change your own status', 'error')
         return redirect(url_for('admin_settings'))
     user.is_admin = not user.is_admin
     db.session.commit()
-    status = 'now an admin 👑' if user.is_admin else 'no longer an admin'
-    flash(f'{user.username} is {status}', 'success')
+    flash(f"{user.username} is {'admin' if user.is_admin else 'user'}", 'success')
     return redirect(url_for('admin_settings'))
 
 # === DASHBOARD ===
@@ -593,40 +553,21 @@ def toggle_admin(user_id):
 def dashboard():
     today = date.today()
     month_start = date(today.year, today.month, 1)
+    t = get_targets_safe(current_user)
 
-    if not hasattr(current_user, 'targets') or not current_user.targets:
-        try:
-            db.session.add(UserTarget(user_id=current_user.id))
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-
-    today_entries = DailyEntry.query.filter(
-        DailyEntry.user_id == current_user.id,
-        DailyEntry.entry_date == today
-    ).all()
-    today_total = round(sum((e.profit_loss or 0) for e in today_entries), 2)
-
-    month_entries = DailyEntry.query.filter(
-        DailyEntry.user_id == current_user.id,
-        DailyEntry.entry_date >= month_start
-    ).all()
-    month_total = round(sum((e.profit_loss or 0) for e in month_entries), 2)
-
-    dt_val = getattr(current_user.targets, 'daily_target', 0.0) if hasattr(current_user, 'targets') and current_user.targets else 0.0
-    mt_val = getattr(current_user.targets, 'monthly_target', 0.0) if hasattr(current_user, 'targets') and current_user.targets else 0.0
-
-    all_approved = User.query.filter_by(is_approved=True).all()
-    messages = ChatMessage.query.order_by(ChatMessage.created_at.asc()).limit(50).all()
+    today_total = round(sum((e.profit_loss or 0) for e in DailyEntry.query.filter_by(
+        user_id=current_user.id, entry_date=today).all()), 2)
+    month_total = round(sum((e.profit_loss or 0) for e in DailyEntry.query.filter(
+        user_id=current_user.id).filter(DailyEntry.entry_date >= month_start).all()), 2)
 
     return render_template('dashboard.html',
         today=today,
         today_total=today_total,
         month_total=month_total,
-        daily_target=dt_val,
-        monthly_target=mt_val,
-        all_users=all_approved,
-        messages=messages
+        daily_target=getattr(t, 'daily_target', 0.0),
+        monthly_target=getattr(t, 'monthly_target', 0.0),
+        all_users=User.query.filter_by(is_approved=True).all(),
+        messages=ChatMessage.query.order_by(ChatMessage.created_at.asc()).limit(50).all()
     )
 
 if __name__ == '__main__':
