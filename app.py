@@ -11,15 +11,21 @@ import requests
 from werkzeug.utils import secure_filename
 import qrcode
 
-from database import db, User, DailyEntry, UserTarget, FeedPost, Comment, PasswordResetRequest, ChatMessage
-
 app = Flask(__name__)
+
+# === DATABASE CONFIG — PERMANENT FIX ===
+basedir = os.path.abspath(os.path.dirname(__file__))
+if 'RENDER' in os.environ:
+    # Use PostgreSQL on Render — permanent storage
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', '').replace('postgres://', 'postgresql://')
+else:
+    # Use SQLite locally
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "groupgain.db")}'
+
 app.config['SECRET_KEY'] = 'groupgain_secret_key_2026_secure!'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///groupgain.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'profile_pics')
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
-
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -28,6 +34,8 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in first!'
 
+# Import database models
+from database import db, User, DailyEntry, UserTarget, FeedPost, Comment, PasswordResetRequest, ChatMessage
 db.init_app(app)
 
 @login_manager.user_loader
@@ -37,18 +45,7 @@ def load_user(user_id):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def get_ngrok_url():
-    try:
-        resp = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=2)
-        if resp.ok:
-            data = resp.json()
-            for t in data.get("tunnels", []):
-                if t.get("proto") == "https":
-                    return t.get("public_url")
-    except Exception:
-        pass
-    return None
-
+# Create tables & admin
 with app.app_context():
     db.create_all()
     if not User.query.filter_by(username='admin').first():
@@ -88,14 +85,10 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
-        db.session.expire_all()
         user = User.query.filter_by(username=username).first()
-        
         if not user:
             flash('Username not found', 'error')
             return redirect(url_for('login'))
-        
         if bcrypt.check_password_hash(user.password_hash, password):
             if not user.is_approved:
                 flash('⏳ Account pending approval', 'error')
@@ -133,7 +126,7 @@ def forgot_password():
         flash('Username not found','error')
     return render_template('forgot_password.html')
 
-# === ADMIN PASSWORD RESET — FINAL FIXED ===
+# === ADMIN PASSWORD RESET ===
 @app.route('/admin/reset-requests')
 @login_required
 def list_reset_requests():
@@ -149,79 +142,49 @@ def admin_reset_password(req_id):
     if not current_user.is_admin:
         flash('Admin only!', 'error')
         return redirect(url_for('dashboard'))
-    
     req = PasswordResetRequest.query.get_or_404(req_id)
-    
     if req.is_resolved:
         flash('Already handled!', 'info')
         return redirect(url_for('list_reset_requests'))
-    
     if request.method == 'POST':
         new_pass = request.form.get('new_password', '').strip()
         confirm_pass = request.form.get('confirm_password', '').strip()
-        
         if len(new_pass) < 6:
             flash('Password must be at least 6 characters!', 'error')
             return redirect(url_for('admin_reset_password', req_id=req_id))
         if new_pass != confirm_pass:
             flash('Passwords do not match!', 'error')
             return redirect(url_for('admin_reset_password', req_id=req_id))
-        
-        db.session.expire_all()
         user = User.query.get(req.user.id)
         if not user:
             flash('User not found!', 'error')
             return redirect(url_for('list_reset_requests'))
-        
-        new_hash = bcrypt.generate_password_hash(new_pass).decode('utf-8')
-        user.password_hash = new_hash
+        user.password_hash = bcrypt.generate_password_hash(new_pass).decode('utf-8')
         req.is_resolved = True
-        
         db.session.commit()
-        db.session.remove()
-        fresh_user = User.query.filter_by(id=user.id).first()
-        
-        if bcrypt.check_password_hash(fresh_user.password_hash, new_pass):
-            flash(f'✅ Password saved & confirmed for {user.username}!', 'success')
-        else:
-            flash('❌ FAILED — delete groupgain.db and restart', 'error')
-        
+        flash(f'✅ Password saved for {user.username}!', 'success')
         return redirect(url_for('list_reset_requests'))
-    
     return render_template('admin_reset.html', req=req)
 
-# === SHARE / QR — 100% WORKING VERSION ===
+# === SHARE / QR — FINAL FIXED ===
 @app.route('/share')
 @login_required
 def share_page():
+    base = request.host_url.rstrip('/')
+    signup_url = f"{base}/signup"
+    qr_code_data = None
     try:
-        base = request.host_url.rstrip('/')
-        signup_url = f"{base}/signup"
-        
-        # Generate QR using PIL — fully compatible
-        import io
-        from PIL import Image
-        
-        qr_img = qrcode.make(signup_url, image_factory=None)
-        buffered = io.BytesIO()
-        
-        # Convert to PIL Image and save
-        pil_img = qr_img.get_image()
-        pil_img.save(buffered, format='PNG')
+        qr_img = qrcode.make(signup_url)
+        buffered = BytesIO()
+        qr_img.save(buffered)
         buffered.seek(0)
-        
-        qr_base64 = base64.b64encode(buffered.read()).decode()
-        
-        return render_template('share.html',
-            profile_url=signup_url,
-            qr_code_data=qr_base64
-        )
+        qr_code_data = base64.b64encode(buffered.read()).decode()
     except Exception as e:
-        flash(f'URL: {signup_url}', 'success')
-        return render_template('share.html',
-            profile_url=signup_url,
-            qr_code_data=None
-        )
+        flash(f'QR note: {str(e)}', 'info')
+    return render_template('share.html',
+        profile_url=signup_url,
+        qr_code_data=qr_code_data
+    )
 
 # === FEED ===
 @app.route('/feed')
@@ -507,7 +470,6 @@ def dashboard():
     month_total = round(sum(e.profit_loss for e in DailyEntry.query.filter(DailyEntry.user_id==current_user.id, DailyEntry.entry_date>=month_start).all()), 2)
     all_users = User.query.filter_by(is_approved=True).all()
     
-    # === ADD THIS LINE — THIS IS WHAT WAS MISSING ===
     messages = ChatMessage.query.order_by(ChatMessage.created_at.asc()).limit(50).all()
     
     return render_template('dashboard.html',
@@ -518,7 +480,7 @@ def dashboard():
         monthly_target=current_user.targets.monthly_target,
         username=current_user.username,
         all_users=all_users,
-        messages=messages  # ← This line is correct, keep it
+        messages=messages
     )
 
 if __name__ == '__main__':
@@ -528,7 +490,6 @@ if __name__ == '__main__':
         local_ip = s.getsockname()[0]
         s.close()
         print(f"\n✅ Running at http://{local_ip}:5000")
-        print(f"✅ QR uses REAL IP — Password Reset FIXED 🔑\n")
     except Exception:
-        print("\n✅ Running at http://localhost:5000\n")
+        print("\n✅ Running at http://localhost:5000")
     app.run(debug=True, host='0.0.0.0', port=5000)
