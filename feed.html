@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Feed — GroupGain</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#e5e5e5;padding:20px;max-width:700px;margin:0 auto}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:25px;padding-bottom:15px;border-bottom:1px solid #2a2a2a}
+nav a{padding:10px 16px;border-radius:8px;text-decoration:none;color:#ccc;background:#1f1f1f}
+form{background:#1a1a1a;padding:20px;border-radius:12px;margin-bottom:25px}
+textarea{width:100%;min-height:80px;padding:12px;border:none;border-radius:8px;background:#2a2a2a;color:#fff;font-size:15px;resize:vertical}
+button{padding:10px 20px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;margin-top:10px}
+.post{background:#1a1a1a;padding:20px;border-radius:12px;margin-bottom:15px}
+.post-head{display:flex;justify-content:space-between;margin-bottom:10px}
+.author{font-weight:700;color:#60a5fa}
+.time{color:#777;font-size:13px}
+.flash{padding:10px 14px;border-radius:8px;margin-bottom:15px}
+.success{background:#1f3d2f;color:#b3ffc7}
+</style>
+</head>
+<body>
+<nav>
+<a href="{{url_for('dashboard')}}">📈 Dashboard</a>
+<a href="{{url_for('calendar_view')}}">📅 Calendar</a>
+<a href="{{url_for('targets')}}">🎯 Targets</a>
+<a href="{{url_for('feed')}}">📰 Feed</a>
+<a href="{{url_for('share')}}">📱 Share</a>
+{% if current_user.is_admin %}<a href="{{url_for('admin_panel')}}">⚙️ Admin</a>{% endif %}
+<a href="{{url_for('logout')}}" style="margin-left:auto">🚪 Logout</a>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{%for c,msg in messages%}<div class="flash {{c}}">{{msg}}</div>{%endfor%}{%endif%}{%endwith%}
+
+<form action="{{url_for('post_status')}}" method="post">
+<h3>✍️ Post Update</h3>
+<textarea name="content" placeholder="Share your trade update..." required></textarea>
+<button>Post</button>
+</form>
+
+<h3>Recent Updates</h3>
+{% for post in posts %}
+<div class="post">
+<div class="post-head">
+<span class="author">{{post.author.username}}</span>
+<span class="time">{{post.created_at.strftime('%d %b %H:%M')}}</span>
+</div>
+<div>{{post.content}}</div>
+</div>
+{% else %}
+<p style="color:#777;text-align:center;padding:30px">No posts yet — be first!</p>
+{% endfor %}
+</body>
+</html>
