@@ -1,86 +1,197 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>{{ profile_user.username }}'s Profile — GroupGain</title>
+  <title>{{ profile_user.username }} — GroupGain</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#121212;color:#e0e0e0;padding:20px;max-width:700px;margin:0 auto}
-    .back{display:inline-block;margin-bottom:20px;color:#60a5fa;text-decoration:none}
-    .profile-card{background:#1e1e1e;border-radius:16px;padding:30px;border:1px solid #333;margin-bottom:25px}
-    .top-row{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
-    .avatar{width:120px;height:120px;border-radius:50%;object-fit:cover;background:#2a2a2a;border:3px solid #10b981}
-    .info h1{font-size:26px;margin-bottom:5px;color:#fff}
-    .badge{display:inline-block;background:#fbbf2420;color:#fbbf24;padding:3px 10px;border-radius:12px;font-size:12px;margin-left:8px}
-    .bio{color:#ccc;margin:12px 0;line-height:1.5}
-    .stats{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:20px 0}
-    .stat-box{background:#252525;padding:15px;border-radius:10px}
-    .stat-label{font-size:12px;color:#888;margin-bottom:4px}
-    .stat-value{font-size:22px;font-weight:700}
-    .pos{color:#10b981}
-    .neg{color:#ef4444}
-    .section-title{font-size:18px;margin:30px 0 15px;color:#fff;padding-bottom:8px;border-bottom:1px solid #2a2a2a}
-    .post{background:#1e1e1e;border-radius:12px;padding:18px;border:1px solid #333;margin-bottom:12px}
-    .post-meta{font-size:12px;color:#777;margin-bottom:8px}
-    .post-content{line-height:1.6;white-space:pre-wrap}
-    .flash{background:#1a2f26;color:#6ee7b7;padding:12px;border-radius:8px;margin-bottom:20px;border:1px solid #10b98140}
+    :root{
+      --bg:#0f0f0f;
+      --card:#1a1a1a;
+      --card-hover:#222;
+      --accent:#6366f1;
+      --green:#10b981;
+      --red:#ef4444;
+      --text:#e5e5e5;
+      --muted:#888;
+      --border:#2a2a2a;
+    }
+    body{
+      font-family:-apple-system,Segoe UI,Roboto,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      padding:20px;
+      max-width:1200px;
+      margin:0 auto;
+    }
+    nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:30px;padding-bottom:15px;border-bottom:1px solid var(--border)}
+    nav a{padding:10px 16px;border-radius:8px;text-decoration:none;color:#ccc;background:var(--card);transition:.2s}
+    nav a:hover{background:var(--card-hover);color:#fff}
+    h1{font-size:28px;margin-bottom:5px}
+    .username{color:var(--accent)}
+    .bio{color:var(--muted);margin-bottom:30px}
+
+    /* TOP TOTAL */
+    .month-total{
+      background:linear-gradient(135deg,#1a1a2e,#0f0f0f);
+      padding:30px;
+      border-radius:16px;
+      margin-bottom:25px;
+    }
+    .month-total .label{font-size:14px;color:var(--muted);margin-bottom:5px}
+    .month-total .value{font-size:42px;font-weight:700}
+    .month-total .value.positive{color:var(--green)}
+    .month-total .value.negative{color:var(--red)}
+
+    /* STATS GRID */
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+      gap:15px;
+      margin-bottom:30px;
+    }
+    .stat-card{
+      background:var(--card);
+      padding:20px;
+      border-radius:12px;
+      border:1px solid var(--border);
+    }
+    .stat-label{font-size:13px;color:var(--muted);margin-bottom:8px}
+    .stat-value{font-size:20px;font-weight:600}
+    .stat-value .win{color:var(--green)}
+    .stat-value .loss{color:var(--red)}
+
+    /* CALENDAR */
+    .calendar-section{background:var(--card);padding:25px;border-radius:16px;border:1px solid var(--border)}
+    .cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+    .cal-nav button{background:var(--bg);border:none;color:var(--text);padding:8px 12px;border-radius:6px;cursor:pointer}
+    .cal-nav button:hover{background:var(--card-hover)}
+    .cal-month{font-size:18px;font-weight:600}
+    .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+    .cal-day-label{text-align:center;font-size:12px;color:var(--muted);padding:8px 0}
+    .cal-day{
+      aspect-ratio:1;
+      display:flex;flex-direction:column;justify-content:center;align-items:center;
+      border-radius:8px;background:var(--bg);font-size:13px;min-height:60px;
+    }
+    .cal-day.green{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3)}
+    .cal-day.red{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3)}
+    .cal-day.empty{background:transparent}
+    .cal-day .num{font-weight:500;margin-bottom:2px}
+    .cal-day .amt{font-size:11px}
+    .cal-day .amt.green{color:var(--green)}
+    .cal-day .amt.red{color:var(--red)}
+
+    .posts-section{margin-top:40px}
+    .posts-section h3{margin-bottom:15px}
+    .post{background:var(--card);padding:20px;border-radius:12px;margin-bottom:15px;border:1px solid var(--border)}
+    .post-time{font-size:12px;color:var(--muted);margin-top:10px}
   </style>
 </head>
 <body>
-  <a href="{{url_for('dashboard')}}" class="back">← Back to Dashboard</a>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}{% for cat, msg in messages %}<p class="flash">{{ msg }}</p>{% endfor %}{% endif %}
-  {% endwith %}
+<nav>
+  <a href="{{ url_for('dashboard') }}">← Dashboard</a>
+  {% if current_user.username == profile_user.username %}
+  <a href="{{ url_for('my_profile') }}">Edit Profile</a>
+  {% endif %}
+</nav>
 
-  <div class="profile-card">
-    <div class="top-row">
-      <img src="{{ url_for('static', filename='profile_pics/' + profile_user.profile_pic) }}" class="avatar">
-      <div class="info">
-        <h1>{{ profile_user.username }}
-          {% if profile_user.is_admin %}<span class="badge">ADMIN</span>{% endif %}
-        </h1>
-        <p class="bio">{{ profile_user.bio }}</p>
-        {% if profile_user.id == current_user.id %}
-          <a href="{{url_for('my_profile')}}" style="color:#10b981;text-decoration:none">✏️ Edit My Profile</a>
-        {% endif %}
-      </div>
+<h1><span class="username">{{ profile_user.username }}</span>'s Profile</h1>
+<p class="bio">{{ profile_user.bio }}</p>
+
+<!-- MONTHLY BIG TOTAL -->
+<div class="month-total">
+  <div class="label">Monthly Performance</div>
+  <div class="value {% if month_total >= 0 %}positive{% else %}negative{% endif %}">
+    £{{ "%.2f"|format(month_total) }}
+  </div>
+</div>
+
+<!-- STATS GRID -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Avg Win / Avg Loss</div>
+    <div class="stat-value">
+      <span class="win">£{{ "%.2f"|format(avg_win) }}</span> /
+      <span class="loss">£{{ "%.2f"|format(avg_loss) }}</span>
     </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Win Rate</div>
+    <div class="stat-value">{{ "%.1f"|format(win_rate) }}%</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Longest Win Streak</div>
+    <div class="stat-value">{{ streak }} days 🔥</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Entries</div>
+    <div class="stat-value">{{ total_entries }}</div>
+  </div>
+</div>
 
-    <div class="stats">
-      <div class="stat-box">
-        <div class="stat-label">Today's P&L</div>
-        <div class="stat-value {{'pos' if today_total >= 0 else 'neg'}}">
-          {{ "+" if today_total >= 0 else "" }}£{{ "%.2f"|format(today_total) }}
-        </div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Month's P&L</div>
-        <div class="stat-value {{'pos' if month_total >= 0 else 'neg'}}">
-          {{ "+" if month_total >= 0 else "" }}£{{ "%.2f"|format(month_total) }}
-        </div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Daily Target</div>
-        <div class="stat-value">£{{ targets.daily_target }}</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Monthly Target</div>
-        <div class="stat-value">£{{ targets.monthly_target }}</div>
-      </div>
+<!-- CALENDAR -->
+<div class="calendar-section">
+  <div class="cal-header">
+    <div class="cal-nav">
+      <a href="{{ url_for('view_profile', username=profile_user.username, year=prev_year, month=prev_month) }}"><button>←</button></a>
+    </div>
+    <div class="cal-month">{{ month_name }} {{ year }}</div>
+    <div class="cal-nav">
+      <a href="{{ url_for('view_profile', username=profile_user.username, year=next_year, month=next_month) }}"><button>→</button></a>
     </div>
   </div>
 
-  <h2 class="section-title">📋 {{ profile_user.username }}'s Activity</h2>
-  {% if posts %}
-    {% for post in posts %}
-    <div class="post">
-      <div class="post-meta">{{ post.created_at.strftime('%d %b %Y • %H:%M') }}</div>
-      <div class="post-content">{{ post.content }}</div>
-    </div>
+  <div class="cal-days">
+    <div class="cal-day-label">SUN</div>
+    <div class="cal-day-label">MON</div>
+    <div class="cal-day-label">TUE</div>
+    <div class="cal-day-label">WED</div>
+    <div class="cal-day-label">THU</div>
+    <div class="cal-day-label">FRI</div>
+    <div class="cal-day-label">SAT</div>
+
+    {% for week in calendar_weeks %}
+      {% for day in week %}
+        {% if day == 0 %}
+          <div class="cal-day empty"></div>
+        {% else %}
+          {% set day_date = date(year, month, day) %}
+          {% set day_total = daily_totals.get(day_date, 0) %}
+          {% if day_total > 0 %}
+            {% set day_class = 'green' %}
+          {% elif day_total < 0 %}
+            {% set day_class = 'red' %}
+          {% else %}
+            {% set day_class = '' %}
+          {% endif %}
+          <div class="cal-day {{ day_class }}">
+            <span class="num">{{ day }}</span>
+            {% if day_total != 0 %}
+              <span class="amt {{ 'green' if day_total > 0 else 'red' }}">
+                £{{ "%.2f"|format(day_total) }}
+              </span>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endfor %}
     {% endfor %}
+  </div>
+</div>
+
+<!-- FEED POSTS -->
+<div class="posts-section">
+  <h3>Recent Activity</h3>
+  {% for post in posts %}
+    <div class="post">
+      <div>{{ post.content }}</div>
+      <div class="post-time">{{ post.created_at.strftime('%d %b %Y • %H:%M') }}</div>
+    </div>
   {% else %}
-    <p style="color:#777">No activity yet.</p>
-  {% endif %}
+    <p style="color:var(--muted);margin-top:15px">No activity yet.</p>
+  {% endfor %}
+</div>
+
 </body>
 </html>
