@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Targets — GroupGain</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#e5e5e5;padding:20px;max-width:800px;margin:0 auto}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:25px;padding-bottom:15px;border-bottom:1px solid #2a2a2a}
+nav a{padding:10px 16px;border-radius:8px;text-decoration:none;color:#ccc;background:#1f1f1f}
+.card{background:#1a1a1a;padding:25px;border-radius:12px}
+h2{margin-bottom:20px}
+p{font-size:18px;margin:10px 0}
+form{display:flex;flex-direction:column;gap:15px;margin-top:20px}
+input{padding:12px;border:none;border-radius:8px;background:#2a2a2a;color:#fff;font-size:16px}
+button{padding:12px 20px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;margin-top:10px}
+.flash{padding:12px 16px;border-radius:8px;margin-bottom:15px}
+.success{background:#1f3d2f;color:#b3ffc7}
+.note{color:#999;font-size:14px;margin-top:5px}
+</style>
+</head>
+<body>
+<nav>
+<a href="{{url_for('dashboard')}}">📈 Dashboard</a>
+<a href="{{url_for('calendar_view')}}">📅 Calendar</a>
+<a href="{{url_for('targets')}}">🎯 Targets</a>
+<a href="{{url_for('feed')}}">📰 Feed</a>
+<a href="{{url_for('share')}}">📱 Share</a>
+{% if current_user.is_admin %}<a href="{{url_for('admin_panel')}}">⚙️ Admin</a>{% endif %}
+<a href="{{url_for('logout')}}" style="margin-left:auto">🚪 Logout</a>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{%for c,msg in messages%}<div class="flash {{c}}">{{msg}}</div>{%endfor%}{%endif%}{%endwith%}
+
+<div class="card">
+<h2>🎯 Your Targets</h2>
+<p><strong>Daily Target:</strong> £{{"%.2f"|format(daily_target)}}</p>
+<p><strong>Monthly Target:</strong> £{{"%.2f"|format(monthly_target)}}</p>
+
+{% if current_user.is_admin %}
+<hr style="border-color:#2a2a2a;margin:25px 0">
+<h3>Update All Users</h3>
+<p class="note">Only you can change these — applies to everyone</p>
+<form method="post">
+<label>Daily Target (£)</label>
+<input type="number" step="0.01" name="daily_target" value="{{daily_target}}" required>
+<label>Monthly Target (£)</label>
+<input type="number" step="0.01" name="monthly_target" value="{{monthly_target}}" required>
+<button>Update All</button>
+</form>
+{% endif %}
+</div>
+</body>
+</html>
