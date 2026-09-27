@@ -16,7 +16,7 @@ class User(UserMixin, db.Model):
     
     posts = db.relationship('FeedPost', backref='author', cascade="all, delete-orphan", lazy=True)
     entries = db.relationship('DailyEntry', backref='owner', cascade="all, delete-orphan", lazy=True)
-    targets = db.relationship('UserTarget', backref='user', cascade="all, delete-orphan', uselist=False)
+    targets = db.relationship('UserTarget', backref='user', cascade="all, delete-orphan", uselist=False)
     chat_messages = db.relationship('ChatMessage', backref='author', cascade="all, delete-orphan", lazy=True)
 
 class DailyEntry(db.Model):
