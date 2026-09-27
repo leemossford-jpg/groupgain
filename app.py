@@ -10,10 +10,13 @@ import qrcode
 
 app = Flask(__name__)
 
-# === DATABASE CONFIG — Works on Render + Local ===
+# === DATABASE CONFIG — Works on Render + Local ✅ FIXED ===
 basedir = os.path.abspath(os.path.dirname(__file__))
-if 'RENDER' in os.environ or 'DATABASE_URL' in os.environ:
-    db_url = os.environ.get('DATABASE_URL', '').replace('postgres://', 'postgresql://')
+
+if 'DATABASE_URL' in os.environ:
+    db_url = os.environ['DATABASE_URL']
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "groupgain.db")}'
