@@ -288,6 +288,48 @@ def remove(uid):
     flash(f"Removed {u.username} ✅", "success")
     return redirect(url_for("admin_panel"))
 
+@app.route("/profile/<username>")
+@login_required
+def profile(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    posts = FeedPost.query.filter_by(user_id=user.id).order_by(FeedPost.created_at.desc()).all()
+    
+    # User's stats
+    from datetime import date
+    month_start = date.today().replace(day=1)
+    entries = DailyEntry.query.filter(
+        DailyEntry.user_id == user.id,
+        DailyEntry.entry_date >= month_start
+    ).all()
+    month_total = sum((e.profit_loss or 0) for e in entries)
+    
+    return render_template("profile.html",
+        profile_user=user,
+        posts=posts,
+        month_total=month_total
+    )
+
+@app.route("/profile/edit", methods=["GET", "POST"])
+@login_required
+def edit_profile():
+    if request.method == "POST":
+        current_user.bio = request.form.get("bio", "")
+        # Simple filename handling for profile pic
+        if "profile_pic" in request.files:
+            file = request.files["profile_pic"]
+            if file.filename:
+                from werkzeug.utils import secure_filename
+                import uuid
+                ext = file.filename.rsplit(".", 1)[-1].lower()
+                if ext in {"jpg", "jpeg", "png", "gif"}:
+                    filename = f"{uuid.uuid4().hex[:12]}.{ext}"
+                    file.save(f"static/profile_pics/{filename}")
+                    current_user.profile_pic = filename
+        db.session.commit()
+        flash("Profile updated ✅", "success")
+        return redirect(url_for("profile", username=current_user.username))
+    return render_template("edit_profile.html")
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
