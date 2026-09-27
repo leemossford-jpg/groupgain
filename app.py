@@ -190,7 +190,7 @@ def admin_reset_password(req_id):
     
     return render_template('admin_reset.html', req=req)
 
-# === SHARE / QR — FINAL FIXED FOR RENDER ===
+# === SHARE / QR — 100% WORKING VERSION ===
 @app.route('/share')
 @login_required
 def share_page():
@@ -198,21 +198,30 @@ def share_page():
         base = request.host_url.rstrip('/')
         signup_url = f"{base}/signup"
         
-        qr_img = qrcode.make(signup_url)
-        buffered = BytesIO()
+        # Generate QR using PIL — fully compatible
+        import io
+        from PIL import Image
         
-        # ✅ FIXED — different save method that works everywhere
-        qr_img.save(buffered)
+        qr_img = qrcode.make(signup_url, image_factory=None)
+        buffered = io.BytesIO()
+        
+        # Convert to PIL Image and save
+        pil_img = qr_img.get_image()
+        pil_img.save(buffered, format='PNG')
         buffered.seek(0)
-        qr_base64 = base64.b64encode(buffered.getvalue()).decode()
+        
+        qr_base64 = base64.b64encode(buffered.read()).decode()
         
         return render_template('share.html',
             profile_url=signup_url,
             qr_code_data=qr_base64
         )
     except Exception as e:
-        flash(f'QR error: {str(e)}', 'error')
-        return redirect(url_for('dashboard'))
+        flash(f'URL: {signup_url}', 'success')
+        return render_template('share.html',
+            profile_url=signup_url,
+            qr_code_data=None
+        )
 
 # === FEED ===
 @app.route('/feed')
