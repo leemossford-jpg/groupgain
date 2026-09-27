@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin — GroupGain</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#e5e5e5;padding:20px;max-width:800px;margin:0 auto}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:25px;padding-bottom:15px;border-bottom:1px solid #2a2a2a}
+nav a{padding:10px 16px;border-radius:8px;text-decoration:none;color:#ccc;background:#1f1f1f}
+.user{background:#1a1a1a;padding:18px;border-radius:12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.name{font-weight:700;font-size:16px}
+.badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.pending{background:#3a2f00;color:#ffd700}
+.ok{background:#1f3d2f;color:#4ade80}
+.admin-tag{color:#60a5fa}
+button{padding:8px 14px;border:none;border-radius:8px;cursor:pointer;font-size:14px}
+.approve{background:#10b981;color:#fff}
+.remove{background:#ef4444;color:#fff}
+.flash{padding:12px 16px;border-radius:8px;margin-bottom:15px}
+.success{background:#1f3d2f;color:#b3ffc7}
+</style>
+</head>
+<body>
+<nav>
+<a href="{{url_for('dashboard')}}">📈 Dashboard</a>
+<a href="{{url_for('calendar_view')}}">📅 Calendar</a>
+<a href="{{url_for('targets')}}">🎯 Targets</a>
+<a href="{{url_for('feed')}}">📰 Feed</a>
+<a href="{{url_for('share')}}">📱 Share</a>
+{% if current_user.is_admin %}<a href="{{url_for('admin_panel')}}">⚙️ Admin</a>{% endif %}
+<a href="{{url_for('logout')}}" style="margin-left:auto">🚪 Logout</a>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{%for c,msg in messages%}<div class="flash {{c}}">{{msg}}</div>{%endfor%}{%endif%}{%endwith%}
+
+<h2>⚙️ User Management</h2>
+{% for u in users %}
+<div class="user">
+<div>
+<div class="name">{{u.username}} {% if u.is_admin %}<span class="admin-tag">⭐ Admin</span>{% endif %}</div>
+<div>
+{% if not u.is_approved %}<span class="badge pending">⏳ Pending</span>
+{% else %}<span class="badge ok">✅ Approved</span>{% endif %}
+</div>
+</div>
+<div style="display:flex;gap:8px">
+{% if not u.is_approved %}
+<form action="{{url_for('approve',uid=u.id)}}" method="post"><button class="approve">✓ Approve</button></form>
+{% endif %}
+{% if u.id != current_user.id %}
+<form action="{{url_for('remove',uid=u.id)}}" method="post" onsubmit="return confirm('Remove {{u.username}}?')"><button class="remove">× Remove</button></form>
+{% endif %}
+</div>
+</div>
+{% endfor %}
+</body>
+</html>
