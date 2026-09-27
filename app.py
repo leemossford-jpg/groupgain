@@ -124,37 +124,51 @@ def logout():
     return redirect(url_for('login'))
 
 
-# === DASHBOARD ===
+# === DASHBOARD — MATCHES database.py PERFECTLY ===
 @app.route('/')
 @login_required
 def dashboard():
     today = date.today()
     month_start = date(today.year, today.month, 1)
+    
+    # Get or create targets — matches database.py
     t = get_targets_safe(current_user)
     
+    # Today's total
     try:
-        today_total = round(sum((e.profit_loss or 0) for e in
-            DailyEntry.query.filter_by(user_id=current_user.id, entry_date=today).all()), 2)
-    except:
+        today_entries = DailyEntry.query.filter_by(
+            user_id=current_user.id,
+            entry_date=today
+        ).all()
+        today_total = round(sum((e.profit_loss or 0) for e in today_entries), 2)
+    except Exception:
         today_total = 0.0
     
+    # Month's total
     try:
-        month_total = round(sum((e.profit_loss or 0) for e in
-            DailyEntry.query.filter(DailyEntry.user_id==current_user.id,
-            DailyEntry.entry_date >= month_start).all()), 2)
-    except:
+        month_entries = DailyEntry.query.filter(
+            DailyEntry.user_id == current_user.id,
+            DailyEntry.entry_date >= month_start
+        ).all()
+        month_total = round(sum((e.profit_loss or 0) for e in month_entries), 2)
+    except Exception:
         month_total = 0.0
     
+    # Chat messages — matches ChatMessage model in database.py
     try:
-        messages = ChatMessage.query.order_by(ChatMessage.created_at.asc()).limit(50).all()
-    except:
+        messages = ChatMessage.query.order_by(
+            ChatMessage.created_at.asc()
+        ).limit(50).all()
+    except Exception:
         messages = []
     
+    # Approved users list
     try:
         all_users = User.query.filter_by(is_approved=True).all()
-    except:
+    except Exception:
         all_users = []
     
+    # Pass EXACT variable names dashboard.html expects
     return render_template('dashboard.html',
         today=today,
         today_total=today_total,
