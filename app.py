@@ -62,7 +62,8 @@ def signup():
         if User.query.filter_by(username=un).first():
             flash("Username taken", "error")
             return redirect(url_for("signup"))
-        u = User(username=un, password_hash=bcrypt.generate_password_hash(request.form.get("password")).decode("utf-8"))
+        pw = request.form.get("password")
+        u = User(username=un, password_hash=bcrypt.generate_password_hash(pw).decode("utf-8"))
         db.session.add(u)
         db.session.commit()
         flash("Account created — waiting admin approval", "success")
@@ -97,10 +98,26 @@ def dashboard():
     today = date.today()
     month_start = date(today.year, today.month, 1)
     t = get_targets_safe(current_user)
-    today_total = round(sum((e.profit_loss or 0) for e in DailyEntry.query.filter_by(user_id=current_user.id, entry_date=today).all()), 2)
-    month_total = round(sum((e.profit_loss or 0) for e in DailyEntry.query.filter(DailyEntry.user_id==current_user.id, DailyEntry.entry_date >= month_start).all()), 2)
+    
+    today_entries = DailyEntry.query.filter_by(user_id=current_user.id, entry_date=today).all()
+    today_total = round(sum((e.profit_loss or 0) for e in today_entries), 2)
+    
+    month_entries = DailyEntry.query.filter(
+        DailyEntry.user_id == current_user.id,
+        DailyEntry.entry_date >= month_start
+    ).all()
+    month_total = round(sum((e.profit_loss or 0) for e in month_entries), 2)
+    
     messages = ChatMessage.query.order_by(ChatMessage.created_at.asc()).limit(50).all()
-    return render_template("dashboard.html", today=today, today_total=today_total, month_total=month_total, daily_target=t.daily_target, monthly_target=t.monthly_target, messages=messages)
+    
+    return render_template("dashboard.html",
+        today=today,
+        today_total=today_total,
+        month_total=month_total,
+        daily_target=t.daily_target,
+        monthly_target=t.monthly_target,
+        messages=messages
+    )
 
 @app.route("/calendar")
 @app.route("/calendar/<int:y>/<int:m>")
@@ -113,12 +130,31 @@ def calendar_view(y=None, m=None):
     next_m, next_y = (m+1, y) if m < 12 else (1, y+1)
     start = date(y, m, 1)
     end = date(y, m, calendar.monthrange(y, m)[1])
-    entries = DailyEntry.query.filter(DailyEntry.user_id==current_user.id, DailyEntry.entry_date >= start, DailyEntry.entry_date <= end).all()
+    
+    entries = DailyEntry.query.filter(
+        DailyEntry.user_id == current_user.id,
+        DailyEntry.entry_date >= start,
+        DailyEntry.entry_date <= end
+    ).all()
+    
     day_totals = {}
     for e in entries:
         day_totals[e.entry_date] = day_totals.get(e.entry_date, 0) + (e.profit_loss or 0)
+    
     t = get_targets_safe(current_user)
-    return render_template("calendar.html", today=today, year=y, month=m, month_name=calendar.month_name[m], calendar_weeks=calendar.monthcalendar(y, m), daily_totals=day_totals, prev_year=prev_y, prev_month=prev_m, next_year=next_y, next_month=next_m, daily_target=t.daily_target)
+    return render_template("calendar.html",
+        today=today,
+        year=y,
+        month=m,
+        month_name=calendar.month_name[m],
+        calendar_weeks=calendar.monthcalendar(y, m),
+        daily_totals=day_totals,
+        prev_year=prev_y,
+        prev_month=prev_m,
+        next_year=next_y,
+        next_month=next_m,
+        daily_target=t.daily_target
+    )
 
 @app.route("/entry/add", methods=["POST"])
 @login_required
@@ -126,14 +162,26 @@ def add_entry():
     try:
         ed = datetime.strptime(request.form.get("entry_date"), "%Y-%m-%d").date()
         pl = float(request.form.get("profit_loss", 0))
-        db.session.add(DailyEntry(user_id=current_user.id, entry_date=ed, profit_loss=pl, notes=request.form.get("notes", "")))
+        notes = request.form.get("notes", "")
+        
+        db.session.add(DailyEntry(
+            user_id=current_user.id,
+            entry_date=ed,
+            profit_loss=pl,
+            notes=notes
+        ))
+        
         sign = "+" if pl >= 0 else ""
-        db.session.add(FeedPost(user_id=current_user.id, content=f"📊 Posted: {sign}£{pl:.2f} on {ed}", post_type="result"))
+        db.session.add(FeedPost(
+            user_id=current_user.id,
+            content=f"📊 Posted: {sign}£{pl:.2f} on {ed}",
+            post_type="result"
+        ))
         db.session.commit()
         flash(f"Added: {sign}£{pl:.2f}", "success")
     except Exception as e:
         flash(f"Error: {e}", "error")
-    return redirect(url_for("calendar_view"))
+    return redirect(url_for("dashboard"))
 
 @app.route("/targets", methods=["GET", "POST"])
 @login_required
@@ -147,8 +195,11 @@ def targets():
             ut.daily_target = dt
             ut.monthly_target = mt
         db.session.commit()
-        flash("Targets updated", "success")
-    return render_template("targets.html", daily_target=t.daily_target, monthly_target=t.monthly_target)
+        flash("Targets updated for all users", "success")
+    return render_template("targets.html",
+        daily_target=t.daily_target,
+        monthly_target=t.monthly_target
+    )
 
 @app.route("/share")
 @login_required
@@ -170,9 +221,25 @@ def feed():
 def post_status():
     c = request.form.get("content", "").strip()
     if c:
-        db.session.add(FeedPost(user_id=current_user.id, content=c, post_type="status"))
+        db.session.add(FeedPost(
+            user_id=current_user.id,
+            content=c,
+            post_type="status"
+        ))
         db.session.commit()
-        flash("Posted", "success")
+        flash("Posted to feed ✅", "success")
+    return redirect(url_for("feed"))
+
+@app.route("/post/delete/<int:pid>", methods=["POST"])
+@login_required
+def delete_post(pid):
+    post = FeedPost.query.get_or_404(pid)
+    if post.user_id != current_user.id and not current_user.is_admin:
+        flash("Not allowed ❌", "error")
+        return redirect(url_for("feed"))
+    db.session.delete(post)
+    db.session.commit()
+    flash("Post deleted ✅", "success")
     return redirect(url_for("feed"))
 
 @app.route("/chat/send", methods=["POST"])
@@ -180,7 +247,10 @@ def post_status():
 def send_chat():
     m = request.form.get("chat_message", "").strip()
     if m:
-        db.session.add(ChatMessage(user_id=current_user.id, content=m))
+        db.session.add(ChatMessage(
+            user_id=current_user.id,
+            content=m
+        ))
         db.session.commit()
     return redirect(url_for("dashboard"))
 
@@ -188,7 +258,7 @@ def send_chat():
 @login_required
 def admin_panel():
     if not current_user.is_admin:
-        flash("Admin only", "error")
+        flash("Admin only ❌", "error")
         return redirect(url_for("dashboard"))
     return render_template("admin.html", users=User.query.all())
 
@@ -201,7 +271,7 @@ def approve(uid):
     u.is_approved = True
     get_targets_safe(u)
     db.session.commit()
-    flash(f"Approved {u.username}", "success")
+    flash(f"Approved {u.username} ✅", "success")
     return redirect(url_for("admin_panel"))
 
 @app.route("/admin/remove/<int:uid>", methods=["POST"])
@@ -211,11 +281,11 @@ def remove(uid):
         return redirect(url_for("dashboard"))
     u = User.query.get_or_404(uid)
     if u.id == current_user.id:
-        flash("Cannot remove yourself", "error")
+        flash("Cannot remove yourself ❌", "error")
         return redirect(url_for("admin_panel"))
     db.session.delete(u)
     db.session.commit()
-    flash(f"Removed {u.username}", "success")
+    flash(f"Removed {u.username} ✅", "success")
     return redirect(url_for("admin_panel"))
 
 if __name__ == "__main__":
