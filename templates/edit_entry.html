@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit My Entry</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#121212;color:#e0e0e0;padding:20px;max-width:500px;margin:0 auto}
+    h1{color:#fff;margin-bottom:20px}
+    form{background:#1e1e1e;padding:25px;border-radius:14px;border:1px solid #333}
+    label{font-size:14px;color:#aaa;display:block;margin-bottom:6px}
+    input,textarea{width:100%;padding:12px;background:#252525;border:1px solid #3a3a3a;border-radius:8px;color:#fff;font-size:15px;margin-bottom:12px}
+    input:focus,textarea:focus{outline:none;border-color:#10b981}
+    button{padding:14px;background:linear-gradient(90deg,#10b981,#059669);color:white;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;width:100%}
+    button:hover{opacity:0.9}
+    .back{display:inline-block;margin-bottom:20px;color:#10b981;text-decoration:none}
+  </style>
+</head>
+<body>
+  <a href="{{url_for('calendar_view')}}" class="back">← Back to My Calendar</a>
+  <h1>✏️ Edit My Entry</h1>
+  <form method="post">
+    <label>Date</label>
+    <input type="date" value="{{ entry.entry_date }}" disabled>
+    <label>Profit/Loss (£)</label>
+    <input type="number" step="0.01" name="profit_loss" value="{{ entry.profit_loss }}" required>
+    <label>Notes</label>
+    <textarea name="notes" rows="3">{{ entry.notes }}</textarea>
+    <button type="submit">💾 Update Entry</button>
+  </form>
+</body>
+</html>
