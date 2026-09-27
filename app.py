@@ -10,10 +10,12 @@ import qrcode
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
+
 if "DATABASE_URL" in os.environ:
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(basedir, 'groupgain.db')}"
+
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "groupgain_secure_2026")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -40,7 +42,7 @@ with app.app_context():
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ✅ HELPERS DEFINED FIRST
+# Helper functions — defined BEFORE routes
 def get_base_url():
     return os.environ.get("RENDER_EXTERNAL_URL", request.host_url.rstrip("/"))
 
@@ -52,7 +54,7 @@ def get_targets_safe(user):
         db.session.commit()
     return t
 
-# ✅ ROUTES
+# Routes
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if current_user.is_authenticated:
@@ -62,7 +64,8 @@ def signup():
         if User.query.filter_by(username=un).first():
             flash("Username taken", "error")
             return redirect(url_for("signup"))
-        u = User(username=un, password_hash=bcrypt.generate_password_hash(request.form.get("password")).decode("utf-8"))
+        pw = request.form.get("password")
+        u = User(username=un, password_hash=bcrypt.generate_password_hash(pw).decode("utf-8"))
         db.session.add(u)
         db.session.commit()
         flash("Account created — waiting admin approval", "success")
@@ -74,8 +77,10 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard"))
     if request.method == "POST":
-        u = User.query.filter_by(username=request.form.get("username", "").strip()).first()
-        if not u or not bcrypt.check_password_hash(u.password_hash, request.form.get("password")):
+        un = request.form.get("username", "").strip()
+        u = User.query.filter_by(username=un).first()
+        pw = request.form.get("password")
+        if not u or not bcrypt.check_password_hash(u.password_hash, pw):
             flash("Invalid login", "error")
             return redirect(url_for("login"))
         if not u.is_approved:
@@ -97,10 +102,17 @@ def dashboard():
     today = date.today()
     month_start = date(today.year, today.month, 1)
     t = get_targets_safe(current_user)
-    today_total = round(sum((e.profit_loss or 0) for e in DailyEntry.query.filter_by(user_id=current_user.id, entry_date=today).all()), 2)
-    month_total = round(sum((e.profit_loss or 0) for e in DailyEntry.query.filter(DailyEntry.user_id==current_user.id, DailyEntry.entry_date >= month_start).all()), 2)
+    
+    today_entries = DailyEntry.query.filter_by(user_id=current_user.id, entry_date=today).all()
+    today_total = round(sum((e.profit_loss or 0) for e in today_entries), 2)
+    
+    month_entries = DailyEntry.query.filter(DailyEntry.user_id==current_user.id, DailyEntry.entry_date >= month_start).all()
+    month_total = round(sum((e.profit_loss or 0) for e in month_entries), 2)
+    
     messages = ChatMessage.query.order_by(ChatMessage.created_at.asc()).limit(50).all()
-    return render_template("dashboard.html", today=today, today_total=today_total, month_total=month_total, daily_target=t.daily_target, monthly_target=t.monthly_target, messages=messages)
+    return render_template("dashboard.html", today=today, today_total=today_total, 
+                           month_total=month_total, daily_target=t.daily_target, 
+                           monthly_target=t.monthly_target, messages=messages)
 
 @app.route("/calendar")
 @app.route("/calendar/<int:y>/<int:m>")
@@ -109,16 +121,28 @@ def calendar_view(y=None, m=None):
     today = date.today()
     y = y or today.year
     m = m or today.month
+    
     prev_m, prev_y = (m-1, y) if m > 1 else (12, y-1)
     next_m, next_y = (m+1, y) if m < 12 else (1, y+1)
+    
     start = date(y, m, 1)
-    end = date(y, m, calendar.monthrange(y, m)[1])
-    entries = DailyEntry.query.filter(DailyEntry.user_id==current_user.id, DailyEntry.entry_date >= start, DailyEntry.entry_date <= end).all()
+    end_day = calendar.monthrange(y, m)[1]
+    end = date(y, m, end_day)
+    
+    entries = DailyEntry.query.filter(DailyEntry.user_id==current_user.id, 
+                                       DailyEntry.entry_date >= start, 
+                                       DailyEntry.entry_date <= end).all()
     day_totals = {}
     for e in entries:
         day_totals[e.entry_date] = day_totals.get(e.entry_date, 0) + (e.profit_loss or 0)
+    
     t = get_targets_safe(current_user)
-    return render_template("calendar.html", today=today, year=y, month=m, month_name=calendar.month_name[m], calendar_weeks=calendar.monthcalendar(y, m), daily_totals=day_totals, prev_year=prev_y, prev_month=prev_m, next_year=next_y, next_month=next_m, daily_target=t.daily_target)
+    return render_template("calendar.html", today=today, year=y, month=m, 
+                           month_name=calendar.month_name[m], 
+                           calendar_weeks=calendar.monthcalendar(y, m),
+                           daily_totals=day_totals, prev_year=prev_y, 
+                           prev_month=prev_m, next_year=next_y, 
+                           next_month=next_m, daily_target=t.daily_target)
 
 @app.route("/entry/add", methods=["POST"])
 @login_required
@@ -126,9 +150,15 @@ def add_entry():
     try:
         ed = datetime.strptime(request.form.get("entry_date"), "%Y-%m-%d").date()
         pl = float(request.form.get("profit_loss", 0))
-        db.session.add(DailyEntry(user_id=current_user.id, entry_date=ed, profit_loss=pl, notes=request.form.get("notes", "")))
+        notes = request.form.get("notes", "")
+        
+        db.session.add(DailyEntry(user_id=current_user.id, entry_date=ed, 
+                                   profit_loss=pl, notes=notes))
+        
         sign = "+" if pl >= 0 else ""
-        db.session.add(FeedPost(user_id=current_user.id, content=f"📊 Posted: {sign}£{pl:.2f} on {ed}", post_type="result"))
+        db.session.add(FeedPost(user_id=current_user.id, 
+                                content=f"📊 Posted: {sign}£{pl:.2f} on {ed}", 
+                                post_type="result"))
         db.session.commit()
         flash(f"Added: {sign}£{pl:.2f}", "success")
     except Exception as e:
@@ -147,19 +177,21 @@ def targets():
             ut.daily_target = dt
             ut.monthly_target = mt
         db.session.commit()
-        flash("Targets updated", "success")
-    return render_template("targets.html", daily_target=t.daily_target, monthly_target=t.monthly_target)
+        flash("Targets updated for all users", "success")
+    return render_template("targets.html", daily_target=t.daily_target, 
+                           monthly_target=t.monthly_target)
 
 @app.route("/share")
 @login_required
 def share():
-    url = get_base_url() + "/signup"
+    url = get_base_url() + url_for("signup")
+    qr = None
     try:
         buf = BytesIO()
         qrcode.make(url).save(buf, "PNG")
         qr = base64.b64encode(buf.getvalue()).decode()
-    except:
-        qr = None
+    except Exception as e:
+        flash(f"QR generation skipped: {e}", "info")
     return render_template("share.html", signup_url=url, qr_data=qr)
 
 @app.route("/feed")
@@ -175,7 +207,7 @@ def post_status():
     if c:
         db.session.add(FeedPost(user_id=current_user.id, content=c, post_type="status"))
         db.session.commit()
-        flash("Posted", "success")
+        flash("Posted to feed", "success")
     return redirect(url_for("feed"))
 
 @app.route("/chat/send", methods=["POST"])
@@ -191,7 +223,7 @@ def send_chat():
 @login_required
 def admin_panel():
     if not current_user.is_admin:
-        flash("Admin only", "error")
+        flash("Admin access only", "error")
         return redirect(url_for("dashboard"))
     return render_template("admin.html", users=User.query.all())
 
@@ -204,7 +236,7 @@ def approve(uid):
     u.is_approved = True
     get_targets_safe(u)
     db.session.commit()
-    flash(f"Approved {u.username}", "success")
+    flash(f"Approved: {u.username}", "success")
     return redirect(url_for("admin_panel"))
 
 @app.route("/admin/remove/<int:uid>", methods=["POST"])
@@ -218,7 +250,7 @@ def remove(uid):
         return redirect(url_for("admin_panel"))
     db.session.delete(u)
     db.session.commit()
-    flash(f"Removed {u.username}", "success")
+    flash(f"Removed: {u.username}", "success")
     return redirect(url_for("admin_panel"))
 
 if __name__ == "__main__":
