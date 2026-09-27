@@ -12,6 +12,7 @@ app = Flask(__name__)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+# === DATABASE CONFIG ===
 if 'DATABASE_URL' in os.environ:
     db_url = os.environ['DATABASE_URL']
     if db_url.startswith('postgres://'):
@@ -23,7 +24,6 @@ else:
 app.config['SECRET_KEY'] = 'groupgain_secret_key_2026_secure!'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'profile_pics')
-app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -39,19 +39,16 @@ db.init_app(app)
 # ONE-TIME FULL DATABASE RESET — REMOVE AFTER FIRST DEPLOY
 # ==============================================
 with app.app_context():
-    # Drop ALL tables and recreate fresh
     db.drop_all()
     db.create_all()
     print("✅ Database fully reset & rebuilt!")
     
-    # Create fresh admin account
     if not User.query.filter_by(username='admin').first():
         admin_pass = bcrypt.generate_password_hash('Admin123!').decode('utf-8')
-        admin = User(username='admin', password_hash=admin_pass, 
+        admin = User(username='admin', password_hash=admin_pass,
                      is_approved=True, is_admin=True, bio="GroupGain Founder 👑")
         db.session.add(admin)
         db.session.commit()
-        # Create targets for admin
         db.session.add(UserTarget(user_id=admin.id, daily_target=0.0, monthly_target=0.0))
         db.session.commit()
         print("✅ Admin created: admin / Admin123! — CHANGE THIS PASSWORD!")
@@ -87,59 +84,6 @@ def get_targets_safe(user):
         return FallbackTargets()
 
 
-# === DASHBOARD — Fixed & Crash-Proof ===
-@app.route('/')
-@login_required
-def dashboard():
-    today = date.today()
-    month_start = date(today.year, today.month, 1)
-    
-    # Get or create targets safely
-    t = get_targets_safe(current_user)
-    
-    # Today's total — if anything fails, show 0
-    try:
-        today_entries = DailyEntry.query.filter_by(
-            user_id=current_user.id, 
-            entry_date=today
-        ).all()
-        today_total = round(sum((e.profit_loss or 0) for e in today_entries), 2)
-    except Exception:
-        today_total = 0.0
-    
-    # Month's total — if anything fails, show 0
-    try:
-        month_entries = DailyEntry.query.filter(
-            DailyEntry.user_id == current_user.id,
-            DailyEntry.entry_date >= month_start
-        ).all()
-        month_total = round(sum((e.profit_loss or 0) for e in month_entries), 2)
-    except Exception:
-        month_total = 0.0
-    
-    # Approved users list
-    try:
-        all_users = User.query.filter_by(is_approved=True).all()
-    except Exception:
-        all_users = []
-    
-    # Chat messages
-    try:
-        messages = ChatMessage.query.order_by(ChatMessage.created_at.asc()).limit(50).all()
-    except Exception:
-        messages = []
-    
-    # Render — will NOT crash now
-    return render_template('dashboard.html',
-        today=today,
-        today_total=today_total,
-        month_total=month_total,
-        daily_target=getattr(t, 'daily_target', 0.0),
-        monthly_target=getattr(t, 'monthly_target', 0.0),
-        all_users=all_users,
-        messages=messages
-    )
-
 # === AUTH ROUTES ===
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -167,14 +111,11 @@ def login():
         un = request.form.get('username', '').strip()
         pw = request.form.get('password', '')
         user = User.query.filter_by(username=un).first()
-        if not user:
-            flash('Username not found', 'error')
-            return redirect(url_for('login'))
-        if not bcrypt.check_password_hash(user.password_hash, pw):
-            flash('Incorrect password', 'error')
+        if not user or not bcrypt.check_password_hash(user.password_hash, pw):
+            flash('Invalid login', 'error')
             return redirect(url_for('login'))
         if not user.is_approved:
-            flash('⏳ Your account is pending admin approval', 'error')
+            flash('⏳ Pending approval', 'error')
             return redirect(url_for('login'))
         login_user(user, remember=True)
         return redirect(url_for('dashboard'))
@@ -184,8 +125,8 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash('Logged out', 'success')
     return redirect(url_for('login'))
+
 
 # === SHARE / QR CODE ===
 @app.route('/share')
@@ -197,9 +138,10 @@ def share_page():
         buf = BytesIO()
         qrcode.make(signup_url).save(buf, format='PNG')
         qr_data = base64.b64encode(buf.getvalue()).decode()
-    except Exception as e:
-        flash(f'QR note: {e}', 'info')
+    except Exception:
+        pass
     return render_template('share.html', signup_url=signup_url, qr_data=qr_data)
+
 
 # === DASHBOARD — FIXED ===
 @app.route('/')
@@ -207,6 +149,7 @@ def share_page():
 def dashboard():
     today = date.today()
     month_start = date(today.year, today.month, 1)
+    
     t = get_targets_safe(current_user)
     
     try:
@@ -214,7 +157,7 @@ def dashboard():
         today_total = round(sum((e.profit_loss or 0) for e in today_entries), 2)
     except Exception:
         today_total = 0.0
-        
+    
     try:
         month_entries = DailyEntry.query.filter(
             DailyEntry.user_id == current_user.id,
@@ -223,17 +166,17 @@ def dashboard():
         month_total = round(sum((e.profit_loss or 0) for e in month_entries), 2)
     except Exception:
         month_total = 0.0
-
+    
     try:
         all_users = User.query.filter_by(is_approved=True).all()
     except Exception:
         all_users = []
-        
+    
     try:
         messages = ChatMessage.query.order_by(ChatMessage.created_at.asc()).limit(50).all()
     except Exception:
         messages = []
-
+    
     return render_template('dashboard.html',
         today=today,
         today_total=today_total,
@@ -243,6 +186,7 @@ def dashboard():
         all_users=all_users,
         messages=messages
     )
+
 
 # === CALENDAR ===
 @app.route('/calendar')
@@ -257,12 +201,12 @@ def calendar_view(year=None, month=None):
         m = max(1, min(12, int(m)))
     except (ValueError, TypeError):
         y, m = today.year, today.month
-
+    
     prev_m, prev_y = (m-1, y) if m > 1 else (12, y-1)
     next_m, next_y = (m+1, y) if m < 12 else (1, y+1)
     month_start = date(y, m, 1)
     month_end = date(y, m, calendar.monthrange(y, m)[1])
-
+    
     try:
         entries = DailyEntry.query.filter(
             DailyEntry.user_id == current_user.id,
@@ -271,7 +215,7 @@ def calendar_view(year=None, month=None):
         ).all()
     except Exception:
         entries = []
-
+    
     daily_totals = {}
     entry_map = {}
     for e in entries:
@@ -281,9 +225,9 @@ def calendar_view(year=None, month=None):
             entry_map[ed] = []
         daily_totals[ed] += e.profit_loss or 0
         entry_map[ed].append(e)
-
+    
     t = get_targets_safe(current_user)
-
+    
     return render_template('calendar.html',
         today=today, year=y, month=m,
         month_name=calendar.month_name[m],
@@ -295,6 +239,7 @@ def calendar_view(year=None, month=None):
         daily_target=getattr(t, 'daily_target', 0.0)
     )
 
+
 # === ADD TRADE ENTRY ===
 @app.route('/entry/add', methods=['POST'])
 @login_required
@@ -305,13 +250,15 @@ def add_entry():
         notes = request.form.get('notes', '').strip()
         db.session.add(DailyEntry(user_id=current_user.id, entry_date=ed, profit_loss=pl, notes=notes))
         sign = '+' if pl >= 0 else ''
-        db.session.add(FeedPost(user_id=current_user.id, content=f"📊 Posted result: {sign}£{pl:.2f} on {ed}", post_type='result'))
+        db.session.add(FeedPost(user_id=current_user.id,
+            content=f"📊 Posted result: {sign}£{pl:.2f} on {ed}", post_type='result'))
         db.session.commit()
         flash(f'✅ Added: {sign}£{pl:.2f}', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {e}', 'error')
     return redirect(url_for('calendar_view'))
+
 
 # === TARGETS ===
 @app.route('/targets', methods=['GET', 'POST'])
@@ -327,21 +274,22 @@ def my_targets():
                 ut.daily_target = dt
                 ut.monthly_target = mt
             db.session.commit()
-            flash(f'✅ Group targets updated: Daily £{dt:.2f} | Monthly £{mt:.2f}', 'success')
+            flash(f'✅ Updated: Daily £{dt:.2f} | Monthly £{mt:.2f}', 'success')
         except Exception as e:
             db.session.rollback()
-            flash(f'Error saving: {e}', 'error')
+            flash(f'Error: {e}', 'error')
     return render_template('targets.html',
         daily_target=getattr(t, 'daily_target', 0.0),
         monthly_target=getattr(t, 'monthly_target', 0.0)
     )
+
 
 # === ADMIN PANEL ===
 @app.route('/admin/settings')
 @login_required
 def admin_settings():
     if not current_user.is_admin:
-        flash('Admin only!', 'error')
+        flash('Admin only', 'error')
         return redirect(url_for('dashboard'))
     try:
         return render_template('admin_settings.html',
@@ -371,12 +319,13 @@ def remove(uid):
     if not current_user.is_admin: abort(403)
     u = User.query.get_or_404(uid)
     if u.id == current_user.id:
-        flash('Cannot remove yourself!', 'error')
+        flash('Cannot remove yourself', 'error')
         return redirect(url_for('admin_settings'))
     db.session.delete(u)
     db.session.commit()
-    flash(f'✅ {u.username} removed from app', 'success')
+    flash(f'✅ {u.username} removed', 'success')
     return redirect(url_for('admin_settings'))
+
 
 # === PROFILE ===
 @app.route('/profile/<username>')
@@ -387,6 +336,7 @@ def profile(username):
         flash('Not approved yet', 'error')
         return redirect(url_for('dashboard'))
     return render_template('profile_view.html', profile_user=u)
+
 
 # === FEED & CHAT ===
 @app.route('/feed')
@@ -416,6 +366,7 @@ def send_chat():
         db.session.add(ChatMessage(user_id=current_user.id, content=m))
         db.session.commit()
     return redirect(url_for('dashboard'))
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
