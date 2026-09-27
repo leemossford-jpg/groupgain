@@ -131,8 +131,7 @@ def list_reset_requests():
 @app.route('/admin/approve-reset/<int:req_id>', methods=['POST'])
 @login_required
 def approve_reset(req_id):
-    if not current_user.is_admin:
-        abort(403)
+    if not current_user.is_admin: abort(403)
     req = PasswordResetRequest.query.get_or_404(req_id)
     req.is_resolved = True
     db.session.commit()
@@ -142,8 +141,7 @@ def approve_reset(req_id):
 @app.route('/admin/reject-reset/<int:req_id>', methods=['POST'])
 @login_required
 def reject_reset(req_id):
-    if not current_user.is_admin:
-        abort(403)
+    if not current_user.is_admin: abort(403)
     req = PasswordResetRequest.query.get_or_404(req_id)
     db.session.delete(req)
     db.session.commit()
@@ -250,14 +248,8 @@ def view_profile(username):
     year = request.args.get('year', today.year, type=int)
     month = request.args.get('month', today.month, type=int)
 
-    prev_month_date = month - 1
-    prev_year_date = year
-    if prev_month_date < 1:
-        prev_month_date, prev_year_date = 12, year - 1
-    next_month_date = month + 1
-    next_year_date = year
-    if next_month_date > 12:
-        next_month_date, next_year_date = 1, year + 1
+    prev_m, prev_y = (month-1, year) if month > 1 else (12, year-1)
+    next_m, next_y = (month+1, year) if month < 12 else (1, year+1)
 
     month_start = date(year, month, 1)
     month_end = date(year, month, calendar.monthrange(year, month)[1])
@@ -315,8 +307,8 @@ def view_profile(username):
         month_name=calendar.month_name[month],
         calendar_weeks=cal,
         daily_totals=daily_totals,
-        prev_year=prev_year_date, prev_month=prev_month_date,
-        next_year=next_year_date, next_month=next_month_date,
+        prev_year=prev_y, prev_month=prev_m,
+        next_year=next_y, next_month=next_m,
         month_total=month_total,
         avg_win=avg_win, avg_loss=avg_loss,
         win_rate=win_rate, streak=max_streak,
@@ -396,8 +388,6 @@ def calendar_view(year=None, month=None):
         daily_totals[e.entry_date] += e.profit_loss
         entry_map[e.entry_date].append(e)
 
-    cal = calendar.monthcalendar(year, month)
-
     if not current_user.targets:
         db.session.add(UserTarget(user_id=current_user.id))
         db.session.commit()
@@ -405,7 +395,7 @@ def calendar_view(year=None, month=None):
     return render_template('calendar.html',
         today=today, year=year, month=month,
         month_name=calendar.month_name[month],
-        calendar_weeks=cal,
+        calendar_weeks=calendar.monthcalendar(year, month),
         daily_totals=daily_totals,
         entry_map=entry_map,
         prev_year=prev_y, prev_month=prev_m,
