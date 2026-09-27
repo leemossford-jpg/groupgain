@@ -190,30 +190,27 @@ def admin_reset_password(req_id):
     
     return render_template('admin_reset.html', req=req)
 
-# === SHARE / QR — FIXED REAL IP ===
+# === SHARE / QR — FIXED FOR RENDER ===
 @app.route('/share')
 @login_required
 def share_page():
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        s.close()
-        base = f"http://{local_ip}:5000"
-    except Exception:
+        # Use Render's public URL instead of local IP
         base = request.host_url.rstrip('/')
-
-    signup_url = f"{base}/signup"
-
-    qr_img = qrcode.make(signup_url)
-    buffered = BytesIO()
-    qr_img.save(buffered, format="PNG")
-    qr_base64 = base64.b64encode(buffered.getvalue()).decode()
-
-    return render_template('share.html',
-        profile_url=signup_url,
-        qr_code_data=qr_base64
-    )
+        signup_url = f"{base}/signup"
+        
+        qr_img = qrcode.make(signup_url)
+        buffered = BytesIO()
+        qr_img.save(buffered, format="PNG")
+        qr_base64 = base64.b64encode(buffered.getvalue()).decode()
+        
+        return render_template('share.html',
+            profile_url=signup_url,
+            qr_code_data=qr_base64
+        )
+    except Exception as e:
+        flash(f'QR generation error: {str(e)}', 'error')
+        return redirect(url_for('dashboard'))
 
 # === FEED ===
 @app.route('/feed')
