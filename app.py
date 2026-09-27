@@ -3,17 +3,14 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from datetime import datetime, date
 import calendar
-import socket
 import os
 from io import BytesIO
 import base64
-import requests
-from werkzeug.utils import secure_filename
 import qrcode
 
 app = Flask(__name__)
 
-# === DATABASE CONFIG — FIXED FOR RENDER ===
+# === DATABASE CONFIG — Works on Render + Local ===
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 if 'RENDER' in os.environ and 'DATABASE_URL' in os.environ:
@@ -57,7 +54,7 @@ with app.app_context():
         db.session.commit()
         print("✅ Admin created: admin / Admin123!")
 
-# === AUTH ===
+# === AUTH ROUTES ===
 @app.route('/signup', methods=['GET','POST'])
 def signup():
     if current_user.is_authenticated:
@@ -235,22 +232,98 @@ def send_chat():
         db.session.commit()
     return redirect(url_for('dashboard'))
 
-# === PROFILE ===
+# === PROFILE — FULL STATS VERSION ===
 @app.route('/profile/<username>')
 @login_required
 def view_profile(username):
     user = User.query.filter_by(username=username).first_or_404()
     if not user.is_approved and not current_user.is_admin and user.id != current_user.id:
         abort(403)
+
     today = date.today()
-    month_start = date(today.year, today.month, 1)
-    today_total = round(sum(e.profit_loss for e in DailyEntry.query.filter_by(user_id=user.id, entry_date=today).all()), 2)
-    month_total = round(sum(e.profit_loss for e in DailyEntry.query.filter(DailyEntry.user_id==user.id, DailyEntry.entry_date>=month_start).all()), 2)
+    year = request.args.get('year', today.year, type=int)
+    month = request.args.get('month', today.month, type=int)
+
+    # Month navigation
+    prev_month_date = month - 1
+    prev_year_date = year
+    if prev_month_date < 1:
+        prev_month_date, prev_year_date = 12, year - 1
+    next_month_date = month + 1
+    next_year_date = year
+    if next_month_date > 12:
+        next_month_date, next_year_date = 1, year + 1
+
+    month_start = date(year, month, 1)
+    first_day = date(today.year, today.month, 1)
+
+    # Entries
+    all_entries = DailyEntry.query.filter_by(user_id=user.id).all()
+    month_entries_current = DailyEntry.query.filter(
+        DailyEntry.user_id == user.id,
+        DailyEntry.entry_date >= first_day
+    ).all()
+
+    month_total = round(sum(e.profit_loss for e in month_entries_current), 2)
+    total_entries = len(all_entries)
+
+    # Calendar daily totals
+    cal_entries = DailyEntry.query.filter(
+        DailyEntry.user_id == user.id,
+        DailyEntry.entry_date >= month_start,
+        DailyEntry.entry_date <= date(year, month, calendar.monthrange(year, month)[1])
+    ).all()
+    daily_totals = {}
+    for e in cal_entries:
+        if e.entry_date not in daily_totals:
+            daily_totals[e.entry_date] = 0
+        daily_totals[e.entry_date] += e.profit_loss
+
+    # Stats calculations
+    winning_days = [v for v in daily_totals.values() if v > 0]
+    losing_days = [v for v in daily_totals.values() if v < 0]
+    avg_win = round(sum(winning_days)/len(winning_days), 2) if winning_days else 0.00
+    avg_loss = round(sum(losing_days)/len(losing_days), 2) if losing_days else 0.00
+
+    total_days = len(winning_days) + len(losing_days)
+    win_rate = round((len(winning_days)/total_days*100), 1) if total_days > 0 else 0.0
+
+    # Streak
+    cal = calendar.monthcalendar(year, month)
+    streak = max_streak = 0
+    for week in cal:
+        for day in week:
+            if day == 0: continue
+            t = daily_totals.get(date(year, month, day), 0)
+            if t > 0:
+                streak += 1
+                max_streak = max(max_streak, streak)
+            else:
+                streak = 0
+
     if not user.targets:
         db.session.add(UserTarget(user_id=user.id))
         db.session.commit()
+
     posts = FeedPost.query.filter_by(user_id=user.id).order_by(FeedPost.created_at.desc()).all()
-    return render_template('profile_view.html', profile_user=user, today_total=today_total, month_total=month_total, targets=user.targets, posts=posts)
+
+    return render_template('profile_view.html',
+        profile_user=user,
+        year=year, month=month,
+        month_name=calendar.month_name[month],
+        calendar_weeks=cal,
+        daily_totals=daily_totals,
+        prev_year=prev_year_date, prev_month=prev_month_date,
+        next_year=next_year_date, next_month=next_month_date,
+        date=date,
+        month_total=month_total,
+        avg_win=avg_win,
+        avg_loss=avg_loss,
+        win_rate=win_rate,
+        streak=max_streak,
+        total_entries=total_entries,
+        posts=posts
+    )
 
 @app.route('/my-profile', methods=['GET','POST'])
 @login_required
@@ -273,6 +346,7 @@ def upload_avatar():
         flash('No file selected','error')
         return redirect(url_for('my_profile'))
     if file and allowed_file(file.filename):
+        from werkzeug.utils import secure_filename
         ext = secure_filename(file.filename).rsplit('.', 1)[1].lower()
         filename = f"user_{current_user.id}_{datetime.utcnow().timestamp()}.{ext}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -485,12 +559,4 @@ def dashboard():
     )
 
 if __name__ == '__main__':
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        s.close()
-        print(f"\n✅ Running at http://{local_ip}:5000")
-    except Exception:
-        print("\n✅ Running at http://localhost:5000")
     app.run(debug=False, host='0.0.0.0', port=5000)
