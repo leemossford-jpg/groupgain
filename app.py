@@ -176,11 +176,11 @@ def share_page():
     try:
         qr_img = qrcode.make(signup_url)
         buffered = BytesIO()
-        qr_img.save(buffered)
+        qr_img.save(buffered, format='PNG')
         buffered.seek(0)
         qr_code_data = base64.b64encode(buffered.read()).decode()
     except Exception as e:
-        flash(f'QR note: {str(e)}', 'info')
+        flash(f'Link: {signup_url}', 'info')
     return render_template('share.html',
         profile_url=signup_url,
         qr_code_data=qr_code_data
