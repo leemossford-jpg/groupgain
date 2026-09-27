@@ -13,13 +13,15 @@ import qrcode
 
 app = Flask(__name__)
 
-# === DATABASE CONFIG — PERMANENT FIX ===
+# === DATABASE CONFIG — FIXED FOR RENDER ===
 basedir = os.path.abspath(os.path.dirname(__file__))
-if 'RENDER' in os.environ:
-    # Use PostgreSQL on Render — permanent storage
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', '').replace('postgres://', 'postgresql://')
+
+if 'RENDER' in os.environ and 'DATABASE_URL' in os.environ:
+    db_url = os.environ['DATABASE_URL']
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 else:
-    # Use SQLite locally
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "groupgain.db")}'
 
 app.config['SECRET_KEY'] = 'groupgain_secret_key_2026_secure!'
@@ -34,7 +36,6 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in first!'
 
-# Import database models
 from database import db, User, DailyEntry, UserTarget, FeedPost, Comment, PasswordResetRequest, ChatMessage
 db.init_app(app)
 
@@ -45,7 +46,6 @@ def load_user(user_id):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Create tables & admin
 with app.app_context():
     db.create_all()
     if not User.query.filter_by(username='admin').first():
@@ -126,7 +126,6 @@ def forgot_password():
         flash('Username not found','error')
     return render_template('forgot_password.html')
 
-# === ADMIN PASSWORD RESET ===
 @app.route('/admin/reset-requests')
 @login_required
 def list_reset_requests():
@@ -166,7 +165,7 @@ def admin_reset_password(req_id):
         return redirect(url_for('list_reset_requests'))
     return render_template('admin_reset.html', req=req)
 
-# === SHARE / QR — FINAL FIXED ===
+# === SHARE / QR CODE ===
 @app.route('/share')
 @login_required
 def share_page():
@@ -176,7 +175,7 @@ def share_page():
     try:
         qr_img = qrcode.make(signup_url)
         buffered = BytesIO()
-        qr_img.save(buffered, format='PNG')
+        qr_img.save(buffered)
         buffered.seek(0)
         qr_code_data = base64.b64encode(buffered.read()).decode()
     except Exception as e:
@@ -291,10 +290,13 @@ def my_targets():
         db.session.add(UserTarget(user_id=current_user.id))
         db.session.commit()
     if request.method == 'POST':
-        current_user.targets.daily_target = float(request.form['daily_target'])
-        current_user.targets.monthly_target = float(request.form['monthly_target'])
-        db.session.commit()
-        flash('Targets updated! ✅','success')
+        if current_user.is_admin:
+            current_user.targets.daily_target = float(request.form['daily_target'])
+            current_user.targets.monthly_target = float(request.form['monthly_target'])
+            db.session.commit()
+            flash('Targets updated! ✅','success')
+        else:
+            flash('Only admin can change targets!','error')
         return redirect(url_for('dashboard'))
     return render_template('my_targets.html', targets=current_user.targets)
 
@@ -469,7 +471,6 @@ def dashboard():
     today_total = round(sum(e.profit_loss for e in DailyEntry.query.filter_by(user_id=current_user.id, entry_date=today).all()), 2)
     month_total = round(sum(e.profit_loss for e in DailyEntry.query.filter(DailyEntry.user_id==current_user.id, DailyEntry.entry_date>=month_start).all()), 2)
     all_users = User.query.filter_by(is_approved=True).all()
-    
     messages = ChatMessage.query.order_by(ChatMessage.created_at.asc()).limit(50).all()
     
     return render_template('dashboard.html',
@@ -492,4 +493,4 @@ if __name__ == '__main__':
         print(f"\n✅ Running at http://{local_ip}:5000")
     except Exception:
         print("\n✅ Running at http://localhost:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)
