@@ -10,7 +10,6 @@ import qrcode
 
 app = Flask(__name__)
 
-# === DATABASE CONFIG ===
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 if 'DATABASE_URL' in os.environ:
@@ -36,6 +35,26 @@ login_manager.login_message = 'Please log in to access GroupGain.'
 from database import db, User, DailyEntry, UserTarget, FeedPost, Comment, PasswordResetRequest, ChatMessage
 db.init_app(app)
 
+# ==============================================
+# ONE-TIME FULL DATABASE RESET — REMOVE AFTER FIRST DEPLOY
+# ==============================================
+with app.app_context():
+    # Drop ALL tables and recreate fresh
+    db.drop_all()
+    db.create_all()
+    print("✅ Database fully reset & rebuilt!")
+    
+    # Create fresh admin account
+    if not User.query.filter_by(username='admin').first():
+        admin_pass = bcrypt.generate_password_hash('Admin123!').decode('utf-8')
+        admin = User(username='admin', password_hash=admin_pass, is_approved=True, is_admin=True, bio="GroupGain Founder 👑")
+        db.session.add(admin)
+        db.session.commit()
+        # Create targets for admin
+        db.session.add(UserTarget(user_id=admin.id, daily_target=0.0, monthly_target=0.0))
+        db.session.commit()
+        print("✅ Admin created: admin / Admin123! — CHANGE THIS PASSWORD!")
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -52,12 +71,12 @@ def get_base_url():
 
 def get_targets_safe(user):
     try:
-        if not hasattr(user, 'targets') or not user.targets:
+        t = UserTarget.query.filter_by(user_id=user.id).first()
+        if not t:
             t = UserTarget(user_id=user.id, daily_target=0.0, monthly_target=0.0)
             db.session.add(t)
             db.session.commit()
-            return t
-        return user.targets
+        return t
     except Exception:
         db.session.rollback()
         class Fallback:
@@ -65,17 +84,7 @@ def get_targets_safe(user):
             monthly_target = 0.0
         return Fallback()
 
-with app.app_context():
-    db.create_all()
-    if not User.query.filter_by(username='admin').first():
-        admin_pass = bcrypt.generate_password_hash('Admin123!').decode('utf-8')
-        admin = User(username='admin', password_hash=admin_pass, is_approved=True, is_admin=True, bio="GroupGain Founder 👑")
-        db.session.add(admin)
-        db.session.commit()
-        get_targets_safe(admin)
-        print("✅ Admin: admin / Admin123! — CHANGE IT!")
-
-# === AUTH ===
+# === AUTH ROUTES ===
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if current_user.is_authenticated:
@@ -90,7 +99,7 @@ def signup():
         db.session.add(new_user)
         db.session.commit()
         get_targets_safe(new_user)
-        flash('Account created — waiting approval', 'success')
+        flash('Account created — waiting for admin approval', 'success')
         return redirect(url_for('login'))
     return render_template('signup.html')
 
@@ -102,11 +111,14 @@ def login():
         un = request.form.get('username', '').strip()
         pw = request.form.get('password', '')
         user = User.query.filter_by(username=un).first()
-        if not user or not bcrypt.check_password_hash(user.password_hash, pw):
-            flash('Invalid login', 'error')
+        if not user:
+            flash('Username not found', 'error')
+            return redirect(url_for('login'))
+        if not bcrypt.check_password_hash(user.password_hash, pw):
+            flash('Incorrect password', 'error')
             return redirect(url_for('login'))
         if not user.is_approved:
-            flash('⏳ Pending approval', 'error')
+            flash('⏳ Your account is pending admin approval', 'error')
             return redirect(url_for('login'))
         login_user(user, remember=True)
         return redirect(url_for('dashboard'))
@@ -116,9 +128,10 @@ def login():
 @login_required
 def logout():
     logout_user()
+    flash('Logged out', 'success')
     return redirect(url_for('login'))
 
-# === SHARE / QR ===
+# === SHARE / QR CODE ===
 @app.route('/share')
 @login_required
 def share_page():
@@ -128,17 +141,16 @@ def share_page():
         buf = BytesIO()
         qrcode.make(signup_url).save(buf, format='PNG')
         qr_data = base64.b64encode(buf.getvalue()).decode()
-    except Exception:
-        pass
+    except Exception as e:
+        flash(f'QR note: {e}', 'info')
     return render_template('share.html', signup_url=signup_url, qr_data=qr_data)
 
-# === DASHBOARD — THE FIXED HOMEPAGE ===
+# === DASHBOARD — FIXED ===
 @app.route('/')
 @login_required
 def dashboard():
     today = date.today()
     month_start = date(today.year, today.month, 1)
-    
     t = get_targets_safe(current_user)
     
     try:
@@ -227,7 +239,7 @@ def calendar_view(year=None, month=None):
         daily_target=getattr(t, 'daily_target', 0.0)
     )
 
-# === ADD ENTRY ===
+# === ADD TRADE ENTRY ===
 @app.route('/entry/add', methods=['POST'])
 @login_required
 def add_entry():
@@ -237,9 +249,9 @@ def add_entry():
         notes = request.form.get('notes', '').strip()
         db.session.add(DailyEntry(user_id=current_user.id, entry_date=ed, profit_loss=pl, notes=notes))
         sign = '+' if pl >= 0 else ''
-        db.session.add(FeedPost(user_id=current_user.id, content=f"📊 {sign}£{pl:.2f} on {ed}", post_type='result'))
+        db.session.add(FeedPost(user_id=current_user.id, content=f"📊 Posted result: {sign}£{pl:.2f} on {ed}", post_type='result'))
         db.session.commit()
-        flash(f'Added: {sign}£{pl:.2f}', 'success')
+        flash(f'✅ Added: {sign}£{pl:.2f}', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {e}', 'error')
@@ -259,28 +271,32 @@ def my_targets():
                 ut.daily_target = dt
                 ut.monthly_target = mt
             db.session.commit()
-            flash(f'✅ Updated: Daily £{dt:.2f} | Monthly £{mt:.2f}', 'success')
+            flash(f'✅ Group targets updated: Daily £{dt:.2f} | Monthly £{mt:.2f}', 'success')
         except Exception as e:
             db.session.rollback()
-            flash(f'Error: {e}', 'error')
+            flash(f'Error saving: {e}', 'error')
     return render_template('targets.html',
         daily_target=getattr(t, 'daily_target', 0.0),
         monthly_target=getattr(t, 'monthly_target', 0.0)
     )
 
-# === ADMIN ===
+# === ADMIN PANEL ===
 @app.route('/admin/settings')
 @login_required
 def admin_settings():
     if not current_user.is_admin:
-        flash('Admin only', 'error')
+        flash('Admin only!', 'error')
         return redirect(url_for('dashboard'))
-    return render_template('admin_settings.html',
-        total_users=User.query.count(),
-        approved_users=User.query.filter_by(is_approved=True).count(),
-        pending_users=User.query.filter_by(is_approved=False).count(),
-        total_entries=DailyEntry.query.count()
-    )
+    try:
+        return render_template('admin_settings.html',
+            total_users=User.query.count(),
+            approved_users=User.query.filter_by(is_approved=True).count(),
+            pending_users=User.query.filter_by(is_approved=False).count(),
+            total_entries=DailyEntry.query.count()
+        )
+    except Exception as e:
+        flash(f'Error: {e}', 'error')
+        return redirect(url_for('dashboard'))
 
 @app.route('/admin/approve/<int:uid>', methods=['POST'])
 @login_required
@@ -299,11 +315,11 @@ def remove(uid):
     if not current_user.is_admin: abort(403)
     u = User.query.get_or_404(uid)
     if u.id == current_user.id:
-        flash('Cannot remove yourself', 'error')
+        flash('Cannot remove yourself!', 'error')
         return redirect(url_for('admin_settings'))
     db.session.delete(u)
     db.session.commit()
-    flash(f'{u.username} removed', 'success')
+    flash(f'✅ {u.username} removed from app', 'success')
     return redirect(url_for('admin_settings'))
 
 # === PROFILE ===
@@ -312,7 +328,7 @@ def remove(uid):
 def profile(username):
     u = User.query.filter_by(username=username).first_or_404()
     if not u.is_approved and not current_user.is_admin:
-        flash('Not approved', 'error')
+        flash('Not approved yet', 'error')
         return redirect(url_for('dashboard'))
     return render_template('profile_view.html', profile_user=u)
 
@@ -320,7 +336,10 @@ def profile(username):
 @app.route('/feed')
 @login_required
 def feed():
-    posts = FeedPost.query.order_by(FeedPost.created_at.desc()).all()
+    try:
+        posts = FeedPost.query.order_by(FeedPost.created_at.desc()).all()
+    except Exception:
+        posts = []
     return render_template('feed.html', posts=posts)
 
 @app.route('/post/status', methods=['POST'])
@@ -330,6 +349,7 @@ def post_status():
     if c:
         db.session.add(FeedPost(user_id=current_user.id, content=c, post_type='status'))
         db.session.commit()
+        flash('Posted ✅', 'success')
     return redirect(url_for('feed'))
 
 @app.route('/chat/send', methods=['POST'])
