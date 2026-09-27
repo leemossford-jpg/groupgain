@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Targets — GroupGain</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#121212;color:#e0e0e0;padding:20px;max-width:500px;margin:0 auto}
+    h1{color:#fff;margin-bottom:20px}
+    .back{display:inline-block;margin-bottom:20px;color:#10b981;text-decoration:none}
+    form{background:#1e1e1e;padding:25px;border-radius:14px;border:1px solid #333}
+    label{font-size:14px;color:#aaa;display:block;margin-bottom:6px}
+    input{width:100%;padding:12px;background:#252525;border:1px solid #3a3a3a;border-radius:8px;color:#fff;font-size:15px;margin-bottom:15px}
+    input:focus{outline:none;border-color:#10b981}
+    button{width:100%;padding:14px;background:linear-gradient(90deg,#10b981,#059669);color:white;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer}
+    button:hover{opacity:0.9}
+    .flash{background:#1a2f26;color:#6ee7b7;padding:12px;border-radius:8px;margin-bottom:20px;border:1px solid #10b98140}
+    .note{font-size:13px;color:#888;margin-top:15px}
+  </style>
+</head>
+<body>
+  <a href="{{url_for('dashboard')}}" class="back">← Back to My Dashboard</a>
+  <h1>🎯 Your Personal Targets</h1>
+  
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for cat, msg in messages %}
+        <p class="flash">{{ msg }}</p>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="post">
+    <label>Daily Profit Target (£)</label>
+    <input type="number" step="0.01" name="daily_target" value="{{ targets.daily_target }}" required>
+    <label>Monthly Profit Target (£)</label>
+    <input type="number" step="0.01" name="monthly_target" value="{{ targets.monthly_target }}" required>
+    <button type="submit">💾 Save My Targets</button>
+  </form>
+
+  <p class="note">
+    ✅ These are <strong>yours only</strong> — nobody else sees them.<br>
+    Default: £500/day | £10,000/month — change to whatever you want!
+  </p>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Approve Users — GroupGain</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#121212;color:#e0e0e0;padding:20px;max-width:600px;margin:0 auto}
+    h1{color:#fff;margin-bottom:20px}
+    .back{display:inline-block;margin-bottom:20px;color:#10b981;text-decoration:none}
+    .user-card{background:#1e1e1e;padding:20px;border-radius:12px;border:1px solid #333;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+    .uname{font-weight:600;font-size:16px;color:#fff}
+    button{padding:10px 20px;background:linear-gradient(90deg,#10b981,#059669);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer}
+    button:hover{opacity:0.9}
+    .empty{color:#888;text-align:center;padding:30px}
+    .flash{background:#1a2f26;color:#6ee7b7;padding:12px;border-radius:8px;margin-bottom:20px;border:1px solid #10b98140}
+  </style>
+</head>
+<body>
+  <a href="{{url_for('dashboard')}}" class="back">← Back to Dashboard</a>
+  <h1>✅ Pending Approval</h1>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for cat, msg in messages %}
+        <p class="flash">{{ msg }}</p>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% if pending %}
+    {% for user in pending %}
+      <div class="user-card">
+        <span class="uname">{{ user.username }}</span>
+        <form method="post">
+          <input type="hidden" name="user_id" value="{{ user.id }}">
+          <button type="submit">Approve ✅</button>
+        </form>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="empty">No pending approvals 🎉</p>
+  {% endif %}
+</body>
+</html>

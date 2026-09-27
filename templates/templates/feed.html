@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed - GroupGain</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #0f172a; color: #fff; min-height: 100vh; padding: 2rem; }
+        .container { max-width: 800px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        h1 { color: #38bdf8; }
+        .back { color: #38bdf8; text-decoration: none; }
+        form { background: #1e293b; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; }
+        textarea { width: 100%; min-height: 100px; background: #334155; color: #fff; border: none; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; font-size: 1rem; }
+        button { background: #38bdf8; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .post { background: #1e293b; padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; }
+        .post-meta { color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .flash { padding: 1rem; margin: 1rem 0; border-radius: 6px; }
+        .flash.success { background: #166534; }
+        .flash.error { background: #991b1b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📢 Activity Feed</h1>
+            <a href="{{ url_for('dashboard') }}" class="back">← Back</a>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for cat, msg in messages %}
+                    <p class="flash {{ cat }}">{{ msg }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('post_status') }}" method="POST">
+            <h3>✍️ Post an Update</h3>
+            <textarea name="content" placeholder="Share your progress..." required></textarea>
+            <button type="submit">Post to Feed</button>
+        </form>
+
+        {% for post in posts %}
+        <div class="post">
+            <div class="post-meta"><strong>{{ post.user.username }}</strong> · {{ post.created_at.strftime('%d %b %Y %H:%M') }}</div>
+            <div style="white-space:pre-wrap; line-height:1.5;">{{ post.content }}</div>
+        </div>
+        {% else %}
+        <p style="color:#94a3b8; text-align:center; padding:2rem;">No posts yet — be the first! 🚀</p>
+        {% endfor %}
+    </div>
+</body>
+</html>
