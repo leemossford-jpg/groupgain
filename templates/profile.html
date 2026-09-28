@@ -2,147 +2,220 @@
 {% block content %}
 
 <style>
-  .profile-header {
+  .page-wrap { padding: 10px 0; }
+
+  /* ===== TOP HEADER — like Monthly Performance ===== */
+  .profile-top {
     display: flex;
-    gap: 30px;
+    justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 40px;
-    padding-bottom: 30px;
-    border-bottom: 1px solid #2a2a2a;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
   }
-  .profile-avatar {
-    width: 140px;
-    height: 140px;
+  .profile-identity {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+  .avatar-lg {
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     background: linear-gradient(135deg, #2563eb, #7c3aed);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 56px;
-    flex-shrink: 0;
+    font-size: 48px;
     overflow: hidden;
+    flex-shrink: 0;
   }
-  .profile-avatar img {
+  .avatar-lg img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  .profile-info h1 {
+  .profile-name h1 {
     font-size: 28px;
-    margin-bottom: 5px;
+    font-weight: 700;
+    margin-bottom: 4px;
   }
   .profile-meta {
     color: #999;
-    margin-bottom: 15px;
+    font-size: 14px;
+    margin-bottom: 8px;
   }
   .profile-bio {
-    max-width: 500px;
-    line-height: 1.6;
-    margin-bottom: 20px;
+    color: #ccc;
+    max-width: 450px;
+    line-height: 1.5;
   }
+  .profile-total {
+    text-align: right;
+  }
+  .total-label {
+    font-size: 14px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .total-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: #10b981;
+  }
+  .total-value.negative {
+    color: #ef4444;
+  }
+
+  /* ===== STATS ROW — exactly like the reference ===== */
   .stats-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 15px;
-    margin-top: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 30px;
   }
   .stat-card {
     background: #1a1a1a;
     border: 1px solid #2a2a2a;
-    border-radius: 10px;
-    padding: 18px;
+    border-radius: 8px;
+    padding: 16px 20px;
   }
   .stat-label {
     font-size: 12px;
+    color: #999;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #999;
     margin-bottom: 6px;
   }
   .stat-value {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
   }
-  .stat-value.positive { color: #10b981; }
-  .stat-value.neutral { color: #e5e5e5; }
+  .stat-value.green { color: #10b981; }
+  .stat-value.red { color: #ef4444; }
+
+  /* ===== EDIT BUTTON ===== */
+  .edit-section {
+    margin-bottom: 30px;
+  }
   .edit-btn {
     display: inline-block;
-    padding: 10px 22px;
+    padding: 10px 24px;
     background: #2563eb;
     color: #fff;
-    border-radius: 8px;
+    border-radius: 6px;
     text-decoration: none;
     font-weight: 600;
-    margin-top: 10px;
   }
   .edit-btn:hover { background: #3b82f6; }
+
+  /* ===== RECENT UPDATES ===== */
   .posts-section h2 {
     font-size: 18px;
-    margin-bottom: 20px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #2a2a2a;
   }
   .post-card {
     background: #1a1a1a;
     border: 1px solid #2a2a2a;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 15px;
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 10px;
+  }
+  .post-text {
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 6px;
   }
   .post-time {
     font-size: 12px;
-    color: #999;
-    margin-top: 10px;
+    color: #666;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #666;
   }
 </style>
 
-<div class="profile-header">
-  <div class="profile-avatar">
-    {% if profile_user.profile_pic and profile_user.profile_pic != 'default.png' %}
-      <img src="{{ url_for('static', filename='profile_pics/' + profile_user.profile_pic) }}" alt="Profile">
+<div class="page-wrap">
+
+  <!-- Top Section: Avatar + Name + Monthly Total -->
+  <div class="profile-top">
+    <div class="profile-identity">
+      <div class="avatar-lg">
+        {% if profile_user.profile_pic and profile_user.profile_pic != 'default.png' %}
+          <img src="{{ url_for('static', filename='profile_pics/' + profile_user.profile_pic) }}" alt="Profile">
+        {% else %}
+          👤
+        {% endif %}
+      </div>
+      <div class="profile-name">
+        <h1>{{ profile_user.username }}</h1>
+        <p class="profile-meta">Joined {{ profile_user.created_at.strftime('%B %Y') }}</p>
+        <p class="profile-bio">
+          {% if profile_user.bio %}{{ profile_user.bio }}
+          {% else %}No bio yet...{% endif %}
+        </p>
+      </div>
+    </div>
+    <div class="profile-total">
+      <div class="total-label">Monthly P&L</div>
+      <div class="total-value {% if month_total < 0 %}negative{% endif %}">
+        £{{ "%.2f"|format(month_total) }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total Posts</div>
+      <div class="stat-value">{{ posts|length }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Status</div>
+      <div class="stat-value">
+        {% if profile_user.is_admin %}👑 Admin{% else %}Member{% endif %}
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Account</div>
+      <div class="stat-value {% if profile_user.is_approved %}green{% else %}red{% endif %}">
+        {% if profile_user.is_approved %}Approved{% else %}Pending{% endif %}
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">This Month</div>
+      <div class="stat-value {% if month_total >= 0 %}green{% else %}red{% endif %}">
+        £{{ "%.2f"|format(month_total) }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Button (only for own profile) -->
+  {% if profile_user.id == current_user.id %}
+  <div class="edit-section">
+    <a href="{{ url_for('edit_profile') }}" class="edit-btn">✏️ Edit Profile</a>
+  </div>
+  {% endif %}
+
+  <!-- Recent Updates -->
+  <div class="posts-section">
+    <h2>Recent Updates</h2>
+    {% for post in posts %}
+      <div class="post-card">
+        <p class="post-text">{{ post.content }}</p>
+        <p class="post-time">{{ post.created_at.strftime('%d %b %Y • %H:%M') }}</p>
+      </div>
     {% else %}
-      👤
-    {% endif %}
+      <div class="empty-state">No updates yet — be the first to post! ✍️</div>
+    {% endfor %}
   </div>
 
-  <div class="profile-info">
-    <h1>{{ profile_user.username }}</h1>
-    <p class="profile-meta">Joined {{ profile_user.created_at.strftime('%B %Y') }}</p>
-    <p class="profile-bio">{{ profile_user.bio }}</p>
-
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">Monthly P&L</div>
-        <div class="stat-value {% if month_total >= 0 %}positive{% else %}neutral{% endif %}">
-          £{{ "%.2f"|format(month_total) }}
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Posts</div>
-        <div class="stat-value">{{ posts|length }}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Status</div>
-        <div class="stat-value" style="font-size: 16px;">
-          {% if profile_user.is_admin %}👑 Admin{% else %}Member{% endif %}
-        </div>
-      </div>
-    </div>
-
-    {% if profile_user.id == current_user.id %}
-      <a href="{{ url_for('edit_profile') }}" class="edit-btn">✏️ Edit Profile</a>
-    {% endif %}
-  </div>
-</div>
-
-<div class="posts-section">
-  <h2>Recent Updates</h2>
-  {% for post in posts %}
-    <div class="post-card">
-      <p>{{ post.content }}</p>
-      <p class="post-time">{{ post.created_at.strftime('%d %b %Y • %H:%M') }}</p>
-    </div>
-  {% else %}
-    <p style="color:#999; text-align:center; padding:30px;">No updates yet</p>
-  {% endfor %}
 </div>
 
 {% endblock %}
