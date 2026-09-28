@@ -175,7 +175,47 @@ def calendar_view():
     # Get year/month from URL params OR use today
     year = request.args.get("year", today.year, type=int)
     month = request.args.get("month", today.month, type=int)
+
+    # ===== SAVE MULTI-DAY GROUP =====
+@app.route("/save-multi-group", methods=["POST"])
+@login_required
+def save_multi_group():
+    amount = float(request.form.get("total_amount", 0))
+    dates_raw = request.form.getlist("dates[]")
+    notes = request.form.get("notes", "")
     
+    if not dates_raw or amount == 0:
+        flash("Select days and enter amount", "error")
+        return redirect(url_for("calendar_view"))
+    
+    # Create unique group ID
+    group_id = f"group_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    
+    for d_str in dates_raw:
+        d = datetime.strptime(d_str, "%Y-%m-%d").date()
+        
+        # Check if entry already exists for this day — update or create
+        entry = DailyEntry.query.filter_by(user_id=current_user.id, date=d).first()
+        if entry:
+            entry.profit_loss = amount
+            entry.group_id = group_id
+            entry.group_total = amount
+            if notes:
+                entry.notes = notes
+        else:
+            entry = DailyEntry(
+                user_id=current_user.id,
+                date=d,
+                profit_loss=amount,
+                notes=notes,
+                group_id=group_id,
+                group_total=amount
+            )
+            db.session.add(entry)
+    
+    db.session.commit()
+    flash(f"✅ £{amount:.2f} applied to {len(dates_raw)} days", "success")
+    return redirect(url_for("calendar_view"))
     # Handle month rollover
     if month < 1:
         month = 12
