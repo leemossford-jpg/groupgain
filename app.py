@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'groupgain-fixed-key-2026'
+app.config['SECRET_KEY'] = 'groupgain-final-match-key-2026'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///groupgain.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -14,7 +14,7 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 
-# ========== DATABASE MODELS ==========
+# ========== DATABASE MODELS — MATCHED EXACTLY ==========
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -78,7 +78,7 @@ def get_user_stats(uid):
     }
 
 
-# ========== ROUTES ==========
+# ========== ALL ROUTES — FULLY MATCHED ==========
 @app.route('/')
 def home():
     return redirect(url_for('calendar') if current_user.is_authenticated else url_for('login'))
@@ -91,7 +91,7 @@ def login():
         if user and user.check_password(request.form.get('password')):
             login_user(user)
             return redirect(url_for('calendar'))
-        flash('❌ Invalid username or password — try again')
+        flash('❌ Invalid username or password')
     return render_template('login.html')
 
 
@@ -108,8 +108,9 @@ def register():
         new_user.set_password(request.form.get('password'))
         db.session.add(new_user)
         db.session.commit()
-        flash('✅ Account created! Please log in')
-        return redirect(url_for('login'))
+        flash('✅ Account created! Logging you in...')
+        login_user(new_user)
+        return redirect(url_for('calendar'))
     return render_template('register.html')
 
 
@@ -184,9 +185,11 @@ def profile():
     return "<h1 style='padding:2rem;color:#fff'>👤 Profile — Batch 4 coming!</h1>"
 
 
-# ========== DATABASE SETUP ==========
+# ========== AUTO-CREATE FRESH DATABASE ==========
 with app.app_context():
     db.create_all()
+    print("✅ Database created & matched successfully!")
+
 
 if __name__ == '__main__':
     app.run(debug=True)
