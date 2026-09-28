@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PnL Calendar</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif}
+:root{--bg:#0b1120;--card:#131c33;--border:#1e2d54;--text:#e6efff;--muted:#7b8ab8;--up:#10b981;--down:#ef4444;--accent:#8b5cf6}
+body{background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:70px}
+.header{padding:1rem 1.25rem;background:var(--card);border-bottom:1px solid var(--border)}
+.htop{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem}
+.hleft{display:flex;align-items:center;gap:.5rem}
+.badge{background:rgba(59,130,246,.2);color:#60a5fa;padding:.25rem .6rem;border-radius:20px;font-size:.75rem}
+.hright{display:flex;gap:.5rem}
+.btnp{background:#1e2d54;border:none;color:var(--text);padding:.5rem 1rem;border-radius:20px}
+.btnc{background:transparent;border:1px solid var(--border);color:var(--text);padding:.5rem .8rem;border-radius:20px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:1rem}
+.card{background:var(--card);border-radius:14px;padding:1rem;border:1px solid var(--border)}
+.lbl{font-size:.75rem;color:var(--muted);margin-bottom:.3rem}
+.val{font-size:1.3rem;font-weight:700}
+.up{color:var(--up)}.down{color:var(--down)}
+.cal{padding:1rem 1.25rem}
+.calh{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.calnav{background:transparent;border:none;color:var(--text);font-size:1.2rem;padding:.3rem}
+.daysh{display:grid;grid-template-columns:repeat(5,1fr);gap:.4rem;margin-bottom:.5rem}
+.dh{text-align:center;font-size:.75rem;color:var(--muted);padding:.5rem}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.4rem}
+.cell{aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;background:var(--card);border:2px solid transparent;cursor:pointer}
+.cell.empty{background:transparent;color:transparent;pointer-events:none}
+.cell.today{border-color:var(--accent)}
+.cell.win{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.3)}
+.cell.loss{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.3)}
+.pnls{font-size:.6rem;opacity:.7}
+.perf{padding:1rem 1.25rem}
+.pgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem}
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:.6rem 0}
+.nav a{display:flex;flex-direction:column;align-items:center;gap:.2rem;color:var(--muted);text-decoration:none;font-size:.7rem}
+.nav a.active{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="htop">
+    <div class="hleft">
+      <h1>PnL Calendar</h1>
+      <span class="badge">5 7D TRADING</span>
+    </div>
+    <div class="hright">
+      <button class="btnp">Month ▾</button>
+      <button class="btnc">🌐 GBP</button>
+    </div>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="lbl">MONTHLY NET</div><div class="val up">+£0.00</div></div>
+    <div class="card"><div class="lbl">ANNUAL NET</div><div class="val up">+£0.00</div></div>
+  </div>
+</div>
+<div class="cal">
+  <div class="calh">
+    <button class="calnav">‹</button>
+    <h2>September 2026</h2>
+    <button class="calnav">›</button>
+  </div>
+  <div class="daysh">
+    <span class="dh">Mon</span><span class="dh">Tue</span><span class="dh">Wed</span><span class="dh">Thu</span><span class="dh">Fri</span>
+  </div>
+  <div class="grid">
+    <div class="cell empty">31</div><div class="cell">1</div><div class="cell">2</div><div class="cell">3</div><div class="cell">4</div>
+    <div class="cell">7</div><div class="cell">8</div><div class="cell">9</div><div class="cell">10</div><div class="cell">11</div>
+    <div class="cell">14</div><div class="cell">15</div><div class="cell">16</div><div class="cell">17</div><div class="cell">18</div>
+    <div class="cell">21</div><div class="cell">22</div><div class="cell">23</div>
+    <div class="cell win" onclick="location.href='/add-entry?date=2026-09-24'"><span>24</span><span class="pnls up">+£152</span></div>
+    <div class="cell">25</div>
+    <div class="cell today">28</div><div class="cell">29</div><div class="cell">30</div>
+    <div class="cell empty">1</div><div class="cell empty">2</div>
+  </div>
+</div>
+<div class="perf">
+  <h3 style="color:var(--muted);margin-bottom:.75rem">SEPTEMBER PERFORMANCE</h3>
+  <div class="pgrid">
+    <div class="card"><div class="lbl">WIN RATE</div><div class="val">0%</div><div style="font-size:.65rem;color:var(--muted)">0W/0L</div></div>
+    <div class="card"><div class="lbl">TRADES</div><div class="val">0</div><div style="font-size:.65rem;color:var(--muted)">Sep</div></div>
+    <div class="card"><div class="lbl">BEST DAY</div><div class="val up">£0.00</div></div>
+    <div class="card"><div class="lbl">BEST TRADE</div><div class="val up">£0.00</div></div>
+  </div>
+</div>
+<div class="nav">
+  <a href="/calendar" class="active"><span>🏠</span>Home</a>
+  <a href="/analyze"><span>📊</span>Analyze</a>
+  <a href="/feed"><span>📡</span>Feed</a>
+  <a href="/chat"><span>💬</span>Chat</a>
+  <a href="/profile"><span>👤</span>Profile</a>
+</div>
+</body>
+</html>

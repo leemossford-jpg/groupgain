@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Add Entry</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+:root{--bg:#0b1120;--card:#131c33;--border:#1e2d54;--text:#e6efff;--muted:#7b8ab8;--up:#10b981;--down:#ef4444;--accent:#8b5cf6}
+body{background:var(--bg);color:var(--text);padding:1rem;min-height:100vh}
+.container{max-width:500px;margin:0 auto}
+.back{color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;margin-bottom:1rem}
+.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.close{color:var(--muted);cursor:pointer;font-size:1.2rem}
+.tabs{display:flex;gap:0;margin-bottom:1.5rem}
+.tab{flex:1;padding:.7rem;border:none;background:transparent;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer}
+.tab.active{color:#fff;border-bottom-color:var(--accent)}
+.btns{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:1.5rem}
+.b{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:1rem;display:flex;flex-direction:column;align-items:center;gap:.3rem;cursor:pointer}
+.b.win.active{border-color:var(--up);background:rgba(16,185,129,.1)}
+.b.loss.active{border-color:var(--down);background:rgba(239,68,68,.1)}
+.b.even.active{border-color:#6366f1;background:rgba(99,102,241,.1)}
+.b .i{font-size:1.2rem}.b.win .i{color:var(--up)}.b.loss .i{color:var(--down)}.b.even .i{color:#6366f1}
+.g{margin-bottom:1rem}
+.l{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.4rem}
+.in{width:100%;background:#1a2542;border:1px solid var(--border);border-radius:10px;padding:.9rem 1rem;color:#fff;font-size:1rem}
+.in:focus{outline:none;border-color:var(--accent)}
+.sub{width:100%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;border-radius:12px;padding:1rem;color:#fff;font-size:1rem;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="/calendar" class="back">← Back</a>
+  <div class="head">
+    <h1>September 24, 2026</h1>
+    <span class="close" onclick="location.href='/calendar'">✕</span>
+  </div>
+  <div class="tabs">
+    <button class="tab active">NEW ENTRY</button>
+    <button class="tab">HISTORY</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active">Detail</button>
+    <button class="tab">Summary</button>
+  </div>
+  <div class="btns">
+    <button class="b win active" data-v="win"><span class="i">↗</span><span>WIN</span></button>
+    <button class="b loss" data-v="loss"><span class="i">↘</span><span>LOSS</span></button>
+    <button class="b even" data-v="even"><span class="i">—</span><span>EVEN</span></button>
+  </div>
+  <form method="POST" action="/save-entry">
+    <input type="hidden" name="kind" id="kind" value="win">
+    <div class="g"><label class="l">SYMBOL</label><input name="sym" class="in" placeholder="e.g. BTCUSDT" required></div>
+    <div class="g"><label class="l">AMOUNT (£)</label><input name="amt" type="number" step="0.01" class="in" placeholder="0.00" required></div>
+    <div class="g"><label class="l">CATEGORY</label><select name="cat" class="in"><option value="">Select Market</option><option>Stocks</option><option>Crypto</option><option>Forex</option><option>Indices</option><option>Commodities</option></select></div>
+    <div class="g"><label class="l">FEES (£)</label><input name="fees" type="number" step="0.01" class="in" placeholder="0.00"></div>
+    <div class="g"><label class="l">NOTES</label><textarea name="notes" class="in" rows="3" placeholder="Your notes..."></textarea></div>
+    <button class="sub">+ Add Entry</button>
+  </form>
+</div>
+<script>
+const bs=document.querySelectorAll('.b');const k=document.getElementById('kind');
+bs.forEach(x=>x.onclick=()=>{bs.forEach(y=>y.classList.remove('active'));x.classList.add('active');k.value=x.dataset.v})
+</script>
+</body>
+</html>
