@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
+from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from datetime import datetime, date, timedelta
@@ -45,7 +45,7 @@ with app.app_context():
         admin = User(username="admin", password_hash=admin_pass, is_approved=True, is_admin=True, bio="GroupGain Founder 👑")
         db.session.add(admin)
         db.session.commit()
-        print("✅ Admin account created: admin / Admin123!")
+        print("✅ Admin created: admin / Admin123!")
 
 # ===== UTILITY =====
 def get_ngrok_url():
@@ -57,7 +57,8 @@ def get_ngrok_url():
             for t in tunnels:
                 if t["proto"] == "https":
                     return t["public_url"]
-    except: pass
+    except:
+        pass
     return None
 
 # ===== AUTH ROUTES =====
@@ -212,12 +213,11 @@ def targets():
     if not tgt:
         tgt = UserTarget(user_id=current_user.id)
         db.session.add(tgt)
-    if request.method == "POST":
-        if current_user.is_admin:
-            tgt.daily_target = float(request.form.get("daily_target", 0))
-            tgt.monthly_target = float(request.form.get("monthly_target", 0))
-            db.session.commit()
-            flash("Targets updated", "success")
+    if request.method == "POST" and current_user.is_admin:
+        tgt.daily_target = float(request.form.get("daily_target", 0))
+        tgt.monthly_target = float(request.form.get("monthly_target", 0))
+        db.session.commit()
+        flash("Targets updated", "success")
     return render_template("targets.html", tgt=tgt)
 
 # ===== FEED =====
@@ -239,7 +239,7 @@ def create_post():
 @app.route("/post/<int:pid>/comment", methods=["POST"])
 @login_required
 def add_comment(pid):
-    p = FeedPost.query.get_or_404(pid)
+    FeedPost.query.get_or_404(pid)
     c = Comment(post_id=pid, author_id=current_user.id, content=request.form.get("content", ""))
     db.session.add(c)
     db.session.commit()
@@ -271,33 +271,46 @@ def profile(username):
     month_total = sum(e.profit_loss for e in month_entries)
     
     unique_days = {}
-    for e in all_entries: unique_days[e.date] = True
+    for e in all_entries:
+        unique_days[e.date] = True
     total_trades = len(unique_days)
     
-    winning_days = sum(1 for d in unique_days if sum(e.profit_loss for e in all_entries if e.date==d) > 0)
+    winning_days = 0
+    for d in unique_days:
+        day_sum = sum(e.profit_loss for e in all_entries if e.date == d)
+        if day_sum > 0:
+            winning_days += 1
     win_rate = (winning_days / total_trades * 100) if total_trades > 0 else 0
     
     win_streak = 0
     for d in sorted(unique_days.keys(), reverse=True):
-        if sum(e.profit_loss for e in all_entries if e.date==d) > 0: win_streak += 1
-        else: break
+        day_sum = sum(e.profit_loss for e in all_entries if e.date == d)
+        if day_sum > 0:
+            win_streak += 1
+        else:
+            break
     
     avg_daily_profit = month_total / today.day if today.day > 0 else 0
     
     daily_pnl_chart = []
     for i in range(6, -1, -1):
         d = today - timedelta(days=i)
-        daily_pnl_chart.append(sum(e.profit_loss for e in all_entries if e.date==d))
-    max_pnl = max((abs(v) or 1 for v in daily_pnl_chart), default=1)
+        daily_pnl_chart.append(sum(e.profit_loss for e in all_entries if e.date == d))
+    max_pnl = max((abs(v) if v != 0 else 1 for v in daily_pnl_chart), default=1)
     
     monthly_pnl_chart = []
     for i in range(5, -1, -1):
         y, m = today.year, today.month - i
-        while m <= 0: m += 12; y -= 1
+        while m <= 0:
+            m += 12
+            y -= 1
         m_start = date(y, m, 1)
-        m_end = date(y, m+1, 1) - timedelta(days=1) if m != 12 else date(y+1, 1, 1) - timedelta(days=1)
+        if m == 12:
+            m_end = date(y + 1, 1, 1) - timedelta(days=1)
+        else:
+            m_end = date(y, m + 1, 1) - timedelta(days=1)
         monthly_pnl_chart.append(sum(e.profit_loss for e in all_entries if m_start <= e.date <= m_end))
-    max_monthly_pnl = max((abs(v) or 1 for v in monthly_pnl_chart), default=1)
+    max_monthly_pnl = max((abs(v) if v != 0 else 1 for v in monthly_pnl_chart), default=1)
     
     posts = FeedPost.query.filter_by(author_id=profile_user.id).order_by(FeedPost.created_at.desc()).all()
     
@@ -324,7 +337,7 @@ def edit_profile():
         if "profile_pic" in request.files:
             f = request.files["profile_pic"]
             if f.filename:
-                ext = f.filename.rsplit(".",1)[-1].lower()
+                ext = f.filename.rsplit(".", 1)[-1].lower()
                 fn = f"{current_user.id}_{datetime.utcnow().timestamp()}.{ext}"
                 f.save(os.path.join(app.config["UPLOAD_FOLDER"], fn))
                 current_user.profile_pic = fn
@@ -359,7 +372,8 @@ def share():
 @app.route("/admin")
 @login_required
 def admin_panel():
-    if not current_user.is_admin: abort(403)
+    if not current_user.is_admin:
+        abort(403)
     users = User.query.all()
     reqs = PasswordResetRequest.query.filter_by(is_resolved=False).all()
     return render_template("admin.html", users=users, requests=reqs)
@@ -367,7 +381,8 @@ def admin_panel():
 @app.route("/admin/approve/<int:uid>", methods=["POST"])
 @login_required
 def approve_user(uid):
-    if not current_user.is_admin: abort(403)
+    if not current_user.is_admin:
+        abort(403)
     u = User.query.get_or_404(uid)
     u.is_approved = True
     db.session.commit()
@@ -376,8 +391,11 @@ def approve_user(uid):
 @app.route("/admin/remove/<int:uid>", methods=["POST"])
 @login_required
 def remove_user(uid):
-    if not current_user.is_admin: abort(403)
-    if uid == current_user.id: flash("Cannot remove yourself", "error"); return redirect(url_for("admin_panel"))
+    if not current_user.is_admin:
+        abort(403)
+    if uid == current_user.id:
+        flash("Cannot remove yourself", "error")
+        return redirect(url_for("admin_panel"))
     u = User.query.get_or_404(uid)
     db.session.delete(u)
     db.session.commit()
@@ -386,7 +404,8 @@ def remove_user(uid):
 @app.route("/admin/approve-reset/<int:rid>", methods=["POST"])
 @login_required
 def approve_reset(rid):
-    if not current_user.is_admin: abort(403)
+    if not current_user.is_admin:
+        abort(403)
     r = PasswordResetRequest.query.get_or_404(rid)
     r.is_resolved = True
     u = User.query.get(r.user_id)
@@ -399,7 +418,8 @@ def approve_reset(rid):
 @app.route("/admin/reject-reset/<int:rid>", methods=["POST"])
 @login_required
 def reject_reset(rid):
-    if not current_user.is_admin: abort(403)
+    if not current_user.is_admin:
+        abort(403)
     db.session.delete(PasswordResetRequest.query.get_or_404(rid))
     db.session.commit()
     return redirect(url_for("admin_panel"))
@@ -407,7 +427,8 @@ def reject_reset(rid):
 @app.route("/admin/set-targets/<int:uid>", methods=["POST"])
 @login_required
 def set_user_targets(uid):
-    if not current_user.is_admin: abort(403)
+    if not current_user.is_admin:
+        abort(403)
     tgt = UserTarget.query.filter_by(user_id=uid).first() or UserTarget(user_id=uid)
     tgt.daily_target = float(request.form.get("daily_target", 0))
     tgt.monthly_target = float(request.form.get("monthly_target", 0))
