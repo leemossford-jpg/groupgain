@@ -36,7 +36,7 @@
       <div class="post-time">{{ post.created_at.strftime('%d %b %Y • %H:%M') }}</div>
     </div>
     {% if post.author.id == current_user.id or current_user.is_admin %}
-    <form action="{{ url_for('delete_post', post_id=post.id) }}" method="POST" onsubmit="return confirm('Delete this post?');">
+    <form action="{{ url_for('delete_post', post_id=post.id) }}" method="POST" onsubmit="return confirm('Delete this post?');" style="margin-left:auto;">
       <button type="submit" class="delete-btn">Delete</button>
     </form>
     {% endif %}
