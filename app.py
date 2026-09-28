@@ -47,8 +47,10 @@ with app.app_context():
         db.session.commit()
         print("✅ Admin created: admin / Admin123!")
 
-# ===== UTILITY =====
-def get_ngrok_url():
+# ===== UTILITY — Get Public URL =====
+def get_public_url():
+    if 'RENDER' in os.environ:
+        return os.environ.get('RENDER_EXTERNAL_URL', None)
     try:
         import requests
         r = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=2)
@@ -57,7 +59,7 @@ def get_ngrok_url():
             for t in tunnels:
                 if t["proto"] == "https":
                     return t["public_url"]
-    except:
+    except Exception:
         pass
     return None
 
@@ -255,7 +257,7 @@ def delete_post(pid):
     db.session.commit()
     return redirect(url_for("feed"))
 
-# ===== PROFILE — FULL STATS VERSION =====
+# ===== PROFILE =====
 @app.route("/profile/<username>")
 @login_required
 def profile(username):
@@ -360,7 +362,7 @@ def send_chat():
 @app.route("/share")
 @login_required
 def share():
-    url = get_ngrok_url() or request.host_url.replace("127.0.0.1", "localhost")
+    url = get_public_url() or request.host_url
     signup_url = url.rstrip("/") + url_for("signup")
     img = qrcode.make(signup_url)
     buf = BytesIO()
@@ -437,4 +439,4 @@ def set_user_targets(uid):
     return redirect(url_for("admin_panel"))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
