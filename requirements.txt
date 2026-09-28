@@ -4,3 +4,4 @@ flask-login
 pandas
 python-dotenv
 werkzeug
+gunicorn
