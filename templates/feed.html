@@ -1,55 +1,62 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Feed — GroupGain</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+{% extends "base.html" %}
+{% block content %}
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#e5e5e5;padding:20px;max-width:700px;margin:0 auto}
-nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:25px;padding-bottom:15px;border-bottom:1px solid #2a2a2a}
-nav a{padding:10px 16px;border-radius:8px;text-decoration:none;color:#ccc;background:#1f1f1f}
-form{background:#1a1a1a;padding:20px;border-radius:12px;margin-bottom:25px}
-textarea{width:100%;min-height:80px;padding:12px;border:none;border-radius:8px;background:#2a2a2a;color:#fff;font-size:15px;resize:vertical}
-button{padding:10px 20px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;margin-top:10px}
-.post{background:#1a1a1a;padding:20px;border-radius:12px;margin-bottom:15px}
-.post-head{display:flex;justify-content:space-between;margin-bottom:10px}
-.author{font-weight:700;color:#60a5fa}
-.time{color:#777;font-size:13px}
-.flash{padding:10px 14px;border-radius:8px;margin-bottom:15px}
-.success{background:#1f3d2f;color:#b3ffc7}
+  .post-card { background: #1f2937; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #374151; }
+  .post-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .post-avatar { width: 40px; height: 40px; border-radius: 50%; background: #374151; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .post-author { font-weight: 600; }
+  .post-time { color: #9ca3af; font-size: 13px; }
+  .post-content { margin: 12px 0; line-height: 1.5; }
+  .comment-box { background: #111827; border-radius: 8px; padding: 12px; margin-top: 15px; }
+  .comment { padding: 8px 0; border-bottom: 1px solid #2a2a2a; }
+  .comment-author { font-weight: 600; font-size: 14px; color: #93c5fd; }
+  textarea, input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #374151; background: #111827; color: white; margin: 8px 0; }
+  button { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+  button:hover { background: #2563eb; }
+  .delete-btn { background: #ef4444; padding: 6px 12px; font-size: 13px; margin-left: auto; }
+  .delete-btn:hover { background: #dc2626; }
+  h2 { margin-bottom: 25px; }
 </style>
-</head>
-<body>
-<nav>
-<a href="{{url_for('dashboard')}}">📈 Dashboard</a>
-<a href="{{url_for('calendar_view')}}">📅 Calendar</a>
-<a href="{{url_for('targets')}}">🎯 Targets</a>
-<a href="{{url_for('feed')}}">📰 Feed</a>
-<a href="{{url_for('share')}}">📱 Share</a>
-{% if current_user.is_admin %}<a href="{{url_for('admin_panel')}}">⚙️ Admin</a>{% endif %}
-<a href="{{url_for('logout')}}" style="margin-left:auto">🚪 Logout</a>
-</nav>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}{%for c,msg in messages%}<div class="flash {{c}}">{{msg}}</div>{%endfor%}{%endif%}{%endwith%}
+<h2>📝 Feed</h2>
 
-<form action="{{url_for('post_status')}}" method="post">
-<h3>✍️ Post Update</h3>
-<textarea name="content" placeholder="Share your trade update..." required></textarea>
-<button>Post</button>
-</form>
-
-<h3>Recent Updates</h3>
-{% for post in posts %}
-<div class="post">
-<div class="post-head">
-<span class="author">{{post.author.username}}</span>
-<span class="time">{{post.created_at.strftime('%d %b %H:%M')}}</span>
+<div class="post-card">
+  <form action="{{ url_for('create_post') }}" method="POST">
+    <textarea name="content" rows="3" placeholder="Post an update about your trading..." required></textarea>
+    <button type="submit">Post Update</button>
+  </form>
 </div>
-<div>{{post.content}}</div>
+
+{% for post in posts %}
+<div class="post-card">
+  <div class="post-header">
+    <div class="post-avatar">👤</div>
+    <div>
+      <div class="post-author">{{ post.author.username }}</div>
+      <div class="post-time">{{ post.created_at.strftime('%d %b %Y • %H:%M') }}</div>
+    </div>
+    {% if post.author.id == current_user.id or current_user.is_admin %}
+    <form action="{{ url_for('delete_post', post_id=post.id) }}" method="POST" onsubmit="return confirm('Delete this post?');">
+      <button type="submit" class="delete-btn">Delete</button>
+    </form>
+    {% endif %}
+  </div>
+  <div class="post-content">{{ post.content }}</div>
+  
+  <div class="comment-box">
+    {% for comment in post.comments %}
+    <div class="comment">
+      <span class="comment-author">{{ comment.author.username }}:</span>
+      <span>{{ comment.content }}</span>
+    </div>
+    {% endfor %}
+    <form action="{{ url_for('add_comment', post_id=post.id) }}" method="POST">
+      <input type="text" name="content" placeholder="Write a comment..." required>
+      <button type="submit">Send</button>
+    </form>
+  </div>
 </div>
 {% else %}
-<p style="color:#777;text-align:center;padding:30px">No posts yet — be first!</p>
+<p style="color:#9ca3af; text-align:center;">No posts yet. Be the first to share an update!</p>
 {% endfor %}
-</body>
-</html>
+{% endblock %}
