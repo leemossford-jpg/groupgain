@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Analyze — PnL Calendar</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif}
+:root{--bg:#0b1120;--card:#131c33;--border:#1e2d54;--text:#e6efff;--muted:#7b8ab8;--up:#10b981;--down:#ef4444;--accent:#8b5cf6;--blue:#3b82f6;--even:#6366f1}
+body{background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:70px}
+.top-bar{padding:1rem 1.25rem;background:var(--card);border-bottom:1px solid var(--border)}
+.period-row{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+.period-btn{padding:.55rem 1rem;border-radius:20px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-weight:600}
+.period-btn.active{background:var(--accent);color:#fff}
+.main-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1rem;padding:0 1.25rem}
+.mtab{padding:.8rem 1rem;background:transparent;border:none;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;font-weight:600}
+.mtab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.sub-tabs{display:flex;gap:1rem;margin-bottom:1rem;padding:0 1.25rem}
+.stab{padding:.5rem 0;background:transparent;border:none;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
+.stab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.panel{padding:0 1.25rem 1.5rem;display:none}
+.panel.active{display:block}
+.cards-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:1.25rem}
+.stat-card{background:var(--card);border-radius:14px;padding:1rem;border:1px solid var(--border)}
+.s-label{font-size:.75rem;color:var(--muted);margin-bottom:.4rem}
+.s-val{font-size:1.2rem;font-weight:700}
+.s-sub{font-size:.65rem;color:var(--muted);margin-top:.2rem}
+.chart-box{background:var(--card);border-radius:14px;padding:1.25rem;border:1px solid var(--border);margin-bottom:1rem}
+.chart-title{font-size:.9rem;color:var(--muted);margin-bottom:1rem}
+.bar-placeholder{display:flex;align-items:end;gap:.4rem;height:180px;padding:0 .5rem}
+.bar{width:14%;border-radius:6px 6px 0 0;transition:.2s}
+.bar.up{background:linear-gradient(180deg,var(--up),rgba(16,185,129,.3))}
+.bar.down{background:linear-gradient(180deg,var(--down),rgba(239,68,68,.3))}
+.bar-labels{display:flex;gap:.4rem;margin-top:.5rem;padding:0 .5rem}
+.blab{width:14%;text-align:center;font-size:.6rem;color:var(--muted)}
+.donut-wrap{display:flex;align-items:center;gap:2rem;justify-content:center;padding:1rem 0}
+.donut-ring{width:160px;height:160px;border-radius:50%;background:conic-gradient(var(--up) 0 65%,var(--down) 65% 100%);display:flex;align-items:center;justify-content:center}
+.donut-inner{width:120px;height:120px;border-radius:50%;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut-pct{font-size:1.8rem;font-weight:700}
+.donut-desc{font-size:.7rem;color:var(--muted)}
+.donut-legend{display:flex;flex-direction:column;gap:.6rem}
+.dl-row{display:flex;align-items:center;gap:.5rem}
+.dl-dot{width:12px;height:12px;border-radius:3px}
+.dl-dot.w{background:var(--up)}.dl-dot.l{background:var(--down)}
+.trades-table{width:100%;border-collapse:separate;border-spacing:0}
+.trades-table th{text-align:left;padding:.75rem .5rem;font-size:.75rem;color:var(--muted);border-bottom:1px solid var(--border)}
+.trades-table td{padding:.75rem .5rem;border-bottom:1px solid rgba(30,45,84,.5);font-size:.9rem}
+.trade-row:hover{background:rgba(59,130,246,.05)}
+.t-sym{font-weight:600}.t-up{color:var(--up)}.t-down{color:var(--down)}
+.filter-row{display:flex;gap:.5rem;margin-bottom:1rem}
+.filt{background:var(--card);border:1px solid var(--border);color:var(--text);padding:.5rem .8rem;border-radius:8px}
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:.6rem 0}
+.nav a{display:flex;flex-direction:column;align-items:center;gap:.2rem;color:var(--muted);text-decoration:none;font-size:.7rem}
+.nav a.active{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <h1 style="font-size:1.25rem;margin-bottom:.75rem">📊 Analyze</h1>
+  <div class="period-row">
+    <button class="period-btn">Week</button>
+    <button class="period-btn active">Month</button>
+    <button class="period-btn">Year</button>
+    <button class="period-btn">All</button>
+  </div>
+</div>
+<div class="main-tabs">
+  <button class="mtab active" data-main="perf">Performance</button>
+  <button class="mtab" data-main="charts">Charts</button>
+  <button class="mtab" data-main="trades">Trades</button>
+</div>
+<div class="panel active" id="perf">
+  <div class="sub-tabs">
+    <button class="stab active" data-sub="overview">Overview</button>
+    <button class="stab" data-sub="stats">Statistics</button>
+  </div>
+  <div id="overview" class="sub-panel">
+    <div class="cards-grid">
+      <div class="stat-card"><div class="s-label">TOTAL P&L</div><div class="s-val up">+£{{ total_pnl or '0.00' }}</div><div class="s-sub">Lifetime</div></div>
+      <div class="stat-card"><div class="s-label">WIN RATE</div><div class="s-val">{{ win_rate or '0' }}%</div><div class="s-sub">{{ wins or 0 }}W / {{ losses or 0 }}L</div></div>
+      <div class="stat-card"><div class="s-label">TOTAL TRADES</div><div class="s-val">{{ trade_count or 0 }}</div><div class="s-sub">Closed positions</div></div>
+      <div class="stat-card"><div class="s-label">PROFIT FACTOR</div><div class="s-val">{{ profit_factor or '0.00' }}</div><div class="s-sub">Gross Win ÷ Gross Loss</div></div>
+    </div>
+  </div>
+  <div id="stats" class="sub-panel" style="display:none">
+    <div class="cards-grid">
+      <div class="stat-card"><div class="s-label">AVG WIN</div><div class="s-val up">+£{{ avg_win or '0.00' }}</div></div>
+      <div class="stat-card"><div class="s-label">AVG LOSS</div><div class="s-val down">-£{{ avg_loss or '0.00' }}</div></div>
+      <div class="stat-card"><div class="s-label">LARGEST WIN</div><div class="s-val up">+£{{ largest_win or '0.00' }}</div></div>
+      <div class="stat-card"><div class="s-label">LARGEST LOSS</div><div class="s-val down">-£{{ largest_loss or '0.00' }}</div></div>
+      <div class="stat-card"><div class="s-label">FEES PAID</div><div class="s-val">£{{ total_fees or '0.00' }}</div></div>
+      <div class="stat-card"><div class="s-label">NET AFTER FEES</div><div class="s-val up">+£{{ net_after_fees or '0.00' }}</div></div>
+    </div>
+  </div>
+</div>
+<div class="panel" id="charts">
+  <div class="chart-box">
+    <div class="chart-title">MONTHLY P&L — Last 7 Months</div>
+    <div class="bar-placeholder">
+      <div class="bar up" style="height:60%"></div><div class="bar up" style="height:85%"></div><div class="bar down" style="height:30%"></div>
+      <div class="bar up" style="height:45%"></div><div class="bar up" style="height:90%"></div><div class="bar down" style="height:20%"></div><div class="bar up" style="height:70%"></div>
+    </div>
+    <div class="bar-labels">
+      <span class="blab">Feb</span><span class="blab">Mar</span><span class="blab">Apr</span><span class="blab">May</span><span class="blab">Jun</span><span class="blab">Jul</span><span class="blab">Aug</span>
+    </div>
+  </div>
+  <div class="chart-box">
+    <div class="chart-title">WIN / LOSS RATIO</div>
+    <div class="donut-wrap">
+      <div class="donut-ring"><div class="donut-inner"><div class="donut-pct">{{ win_rate or '0' }}%</div><div class="donut-desc">Win Rate</div></div></div>
+      <div class="donut-legend">
+        <div class="dl-row"><span class="dl-dot w"></span> Wins — {{ wins or 0 }}</div>
+        <div class="dl-row"><span class="dl-dot l"></span> Losses — {{ losses or 0 }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="panel" id="trades">
+  <div class="filter-row">
+    <select class="filt"><option>All Markets</option><option>Stocks</option><option>Crypto</option><option>Forex</option></select>
+    <select class="filt"><option>All Results</option><option>Win</option><option>Loss</option></select>
+  </div>
+  <table class="trades-table">
+    <thead><tr><th>Date</th><th>Symbol</th><th>P&L</th><th>Cat</th></tr></thead>
+    <tbody>
+      {% if trades %}{% for t in trades %}
+      <tr class="trade-row">
+        <td>{{ t.date.strftime('%d %b') }}</td>
+        <td class="t-sym">{{ t.symbol or '—' }}</td>
+        <td class="{{ 't-up' if t.pnl_amount >= 0 else 't-down' }}">
+          {{ '+' if t.pnl_amount >= 0 else '' }}£{{ "%.2f"|format(t.pnl_amount or 0) }}
+        </td>
+        <td>{{ t.category or '—' }}</td>
+      </tr>
+      {% endfor %}{% else %}
+      <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:2rem">No trades yet — add your first entry!</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+<nav class="nav">
+  <a href="/calendar">🏠<br>Home</a>
+  <a href="/analyze" class="active">📊<br>Analyze</a>
+  <a href="/feed">📡<br>Feed</a>
+  <a href="/chat">💬<br>Chat</a>
+  <a href="/profile">👤<br>Profile</a>
+</nav>
+<script>
+document.querySelectorAll('.mtab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.mtab').forEach(x=>x.classList.remove('active'));t.classList.add('active')
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===t.dataset.main))
+})
+document.querySelectorAll('.stab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.stab').forEach(x=>x.classList.remove('active'));t.classList.add('active')
+  document.querySelectorAll('.sub-panel').forEach(p=>p.style.display=p.id===t.dataset.sub?'block':'none')
+})
+document.querySelectorAll('.period-btn').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.period-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')
+})
+</script>
+</body>
+</html>
