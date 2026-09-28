@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Log Trade — GroupGain</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    *{box-sizing:border-box;}
+    :root{--bg:#f0f4f8;--card:white;--text:#1e293b;--accent:#2563eb;--border:#e2e8f0;}
+    body{font-family:system-ui;background:var(--bg);color:var(--text);padding:2rem;}
+    .c{max-width:600px;margin:0 auto;background:var(--card);padding:2rem;border-radius:16px;}
+    label{display:block;margin-top:1.25rem;font-weight:600;}
+    input,select,textarea{width:100%;padding:.85rem;margin-top:.5rem;border:1px solid var(--border);border-radius:8px;font-size:1rem;background:transparent;color:var(--text);}
+    button{margin-top:1.5rem;width:100%;padding:.85rem;background:var(--accent);color:white;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;}
+    a{display:inline-block;margin-top:1rem;color:var(--accent);text-decoration:none;}
+  </style>
+</head>
+<body>
+  <div class="c">
+    <h2>📝 Log New Trade</h2>
+    <form method="post">
+      <label>Symbol</label>
+      <input name="symbol" placeholder="e.g. AAPL, BTC, NG" required>
+      <label>Asset Type</label>
+      <select name="asset_type">
+        <option>Stocks</option><option>Crypto</option><option>Forex</option><option>Commodities</option>
+      </select>
+      <label>Entry Price</label>
+      <input name="entry_price" type="number" step="0.01" required>
+      <label>Exit Price <span style="font-weight:normal;opacity:.7;">(leave blank if open)</span></label>
+      <input name="exit_price" type="number" step="0.01">
+      <label>Quantity / Size</label>
+      <input name="quantity" type="number" step="0.01" required>
+      <label>Tags <span style="font-weight:normal;opacity:.7;">(comma separated)</span></label>
+      <input name="tags" placeholder="#scalp, #swing">
+      <label>Notes / Strategy</label>
+      <textarea name="notes" rows="4" placeholder="Entry reason, exit plan…"></textarea>
+      <button>Save Trade</button>
+    </form>
+    <a href="{{url_for('dashboard')}}">← Back to Dashboard</a>
+  </div>
+</body>
+</html>

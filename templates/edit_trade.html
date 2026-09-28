@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit Trade — GroupGain</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    *{box-sizing:border-box;}
+    :root{--bg:#f0f4f8;--card:white;--text:#1e293b;--accent:#2563eb;--border:#e2e8f0;}
+    body{font-family:system-ui;background:var(--bg);color:var(--text);padding:2rem;}
+    .c{max-width:600px;margin:0 auto;background:var(--card);padding:2rem;border-radius:16px;}
+    label{display:block;margin-top:1rem;font-weight:600;}
+    input,select,textarea{width:100%;padding:.75rem;margin-top:.5rem;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text);}
+    button{margin-top:1.5rem;width:100%;padding:.75rem;background:var(--accent);color:white;border:none;border-radius:8px;font-size:1rem;cursor:pointer;}
+    a{display:inline-block;margin-top:1rem;color:var(--accent);text-decoration:none;}
+  </style>
+</head>
+<body>
+  <div class="c">
+    <h2>✏️ Edit Trade</h2>
+    <form method="post">
+      <label>Symbol</label>
+      <input name="symbol" value="{{trade.symbol}}" required>
+      <label>Asset Type</label>
+      <select name="asset_type">
+        <option {% if trade.asset_type=='Stocks' %}selected{% endif %}>Stocks</option>
+        <option {% if trade.asset_type=='Crypto' %}selected{% endif %}>Crypto</option>
+        <option {% if trade.asset_type=='Forex' %}selected{% endif %}>Forex</option>
+        <option {% if trade.asset_type=='Commodities' %}selected{% endif %}>Commodities</option>
+      </select>
+      <label>Entry Price</label>
+      <input name="entry_price" type="number" step="0.01" value="{{trade.entry_price}}" required>
+      <label>Exit Price</label>
+      <input name="exit_price" type="number" step="0.01" value="{{trade.exit_price or ''}}">
+      <label>Quantity</label>
+      <input name="quantity" type="number" step="0.01" value="{{trade.quantity}}" required>
+      <label>Tags</label>
+      <input name="tags" value="{{trade.tags or ''}}">
+      <label>Notes</label>
+      <textarea name="notes" rows="4">{{trade.notes or ''}}</textarea>
+      <button>Update Trade</button>
+    </form>
+    <a href="{{url_for('dashboard')}}">← Cancel</a>
+  </div>
+</body>
+</html>

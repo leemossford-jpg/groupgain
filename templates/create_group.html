@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Group — GroupGain</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    *{box-sizing:border-box;}
+    :root{--bg:#f0f4f8;--card:white;--text:#1e293b;--accent:#22c55e;--border:#e2e8f0;}
+    body{font-family:system-ui;background:var(--bg);color:var(--text);padding:2rem;}
+    .c{max-width:500px;margin:0 auto;background:var(--card);padding:2rem;border-radius:16px;}
+    input{width:100%;padding:.85rem;margin:.5rem 0;border:1px solid var(--border);border-radius:8px;font-size:1rem;background:transparent;color:var(--text);}
+    button{width:100%;padding:.85rem;background:var(--accent);color:white;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;margin-top:.5rem;}
+    .code-box{background:#fef3c7;padding:1rem;border-radius:8px;text-align:center;font-size:1.5rem;font-weight:700;margin:1rem 0;letter-spacing:2px;}
+    a{display:inline-block;margin-top:1rem;color:var(--accent);text-decoration:none;}
+  </style>
+</head>
+<body>
+  <div class="c">
+    <h2>🏗️ Create Your Group</h2>
+    {% with m=get_flashed_messages() %}{%if m%}<p style="background:#dcfce7;padding:1rem;border-radius:8px;text-align:center;">{{m[0]}}</p>{%endif%}{%endwith%}
+    <form method="post">
+      <input name="name" placeholder="Group Name — e.g. The Trading Crew" required>
+      <input name="goal_amount" type="number" step="0.01" placeholder="Monthly Profit Goal (optional — e.g. 5000)">
+      <button>Create Group & Get Invite Code</button>
+    </form>
+    <a href="{{url_for('dashboard')}}">← Back</a>
+  </div>
+</body>
+</html>
