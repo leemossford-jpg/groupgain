@@ -18,8 +18,7 @@ class User(UserMixin, db.Model):
     entries = db.relationship('DailyEntry', backref='user', cascade="all, delete-orphan", lazy=True)
     targets = db.relationship('UserTarget', backref='user', cascade="all, delete-orphan", lazy=True)
     reset_requests = db.relationship('PasswordResetRequest', backref='user', cascade="all, delete-orphan", lazy=True)
-    chat_messages = db.relationship('ChatMessage', backref='author', cascade="all, delete-orphan', lazy=True)
-
+    chat_messages = db.relationship('ChatMessage', backref='author', cascade="all, delete-orphan", lazy=True)
 
 class DailyEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -28,13 +27,11 @@ class DailyEntry(db.Model):
     profit_loss = db.Column(db.Float, nullable=False)
     notes = db.Column(db.Text, default="")
 
-
 class UserTarget(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     daily_target = db.Column(db.Float, default=0.0)
     monthly_target = db.Column(db.Float, default=0.0)
-
 
 class FeedPost(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -44,7 +41,6 @@ class FeedPost(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     comments = db.relationship('Comment', backref='post', cascade="all, delete-orphan", lazy=True)
 
-
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, db.ForeignKey('feedpost.id'), nullable=False)
@@ -53,13 +49,11 @@ class Comment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     author = db.relationship('User', backref='comments')
 
-
 class PasswordResetRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     is_resolved = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
 
 class ChatMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
