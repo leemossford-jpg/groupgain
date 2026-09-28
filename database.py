@@ -14,11 +14,10 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # ONE set of relationships — no duplicates
     posts = db.relationship('FeedPost', backref='author', cascade="all, delete-orphan", lazy=True)
     entries = db.relationship('DailyEntry', backref='user', cascade="all, delete-orphan", lazy=True)
     targets = db.relationship('UserTarget', backref='user', cascade="all, delete-orphan", lazy=True)
-    reset_requests = db.relationship('PasswordResetRequest', backref='user', cascade="all, delete-orphan', lazy=True)
+    reset_requests = db.relationship('PasswordResetRequest', backref='user', cascade="all, delete-orphan", lazy=True)
     chat_messages = db.relationship('ChatMessage', backref='author', cascade="all, delete-orphan', lazy=True)
 
 
@@ -28,7 +27,6 @@ class DailyEntry(db.Model):
     date = db.Column(db.Date, nullable=False)
     profit_loss = db.Column(db.Float, nullable=False)
     notes = db.Column(db.Text, default="")
-    # Removed duplicate entry_date / created_at
 
 
 class UserTarget(db.Model):
@@ -42,7 +40,7 @@ class FeedPost(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    post_type = db.Column(db.String(30), default="status")  # kept if you want it
+    post_type = db.Column(db.String(30), default="status")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     comments = db.relationship('Comment', backref='post', cascade="all, delete-orphan", lazy=True)
 
