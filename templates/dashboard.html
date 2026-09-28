@@ -22,9 +22,7 @@
     font-family: -apple-system, Segoe UI, Roboto, sans-serif;
   }
 
-  .page-container {
-    padding: 2px 0;
-  }
+  .page-container { padding: 2px 0; }
 
   /* ===== HEADER ===== */
   .welcome-bar {
@@ -35,21 +33,9 @@
     flex-wrap: wrap;
     gap: 15px;
   }
-  .welcome-text h1 {
-    font-size: 24px;
-    font-weight: 700;
-    color: #fff;
-  }
-  .welcome-text p {
-    color: var(--text-secondary);
-    font-size: 13px;
-    margin-top: 4px;
-  }
-  .date-range {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
+  .welcome-text h1 { font-size: 24px; font-weight: 700; color: #fff; }
+  .welcome-text p { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+  .date-range { display: flex; gap: 10px; align-items: center; }
   .date-btn {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -60,11 +46,7 @@
   }
 
   /* ===== GRID LAYOUT ===== */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 14px;
-  }
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
 
   /* ===== CARDS ===== */
   .card {
@@ -80,19 +62,14 @@
     color: var(--text-secondary);
     margin-bottom: 10px;
   }
-  .card-value {
-    font-size: 28px;
-    font-weight: 700;
-  }
+  .card-value { font-size: 28px; font-weight: 700; }
   .card-value.green { color: var(--accent-green); }
   .card-value.red { color: var(--accent-red); }
   .card-value.blue { color: var(--accent-blue-light); }
 
-  /* ===== CARD SIZES ===== */
   .col-3 { grid-column: span 3; }
   .col-4 { grid-column: span 4; }
   .col-6 { grid-column: span 6; }
-  .col-8 { grid-column: span 8; }
   .col-12 { grid-column: span 12; }
 
   /* ===== PROGRESS BAR ===== */
@@ -114,27 +91,12 @@
     border-radius: 5px;
     transition: width 0.3s ease;
   }
-  .progress-text {
-    font-size: 12px;
-    color: var(--text-secondary);
-    white-space: nowrap;
-  }
+  .progress-text { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
 
   /* ===== ADD ENTRY FORM ===== */
-  .add-entry-card h3 {
-    font-size: 15px;
-    margin-bottom: 14px;
-    color: #fff;
-  }
-  .form-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .form-group {
-    flex: 1;
-    min-width: 140px;
-  }
+  .add-entry-card h3 { font-size: 15px; margin-bottom: 14px; color: #fff; }
+  .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .form-group { flex: 1; min-width: 140px; }
   .form-group label {
     display: block;
     font-size: 12px;
@@ -163,11 +125,7 @@
   .add-btn:hover { background: var(--accent-blue-light); }
 
   /* ===== CHAT BOX ===== */
-  .chat-card {
-    display: flex;
-    flex-direction: column;
-    height: 300px;
-  }
+  .chat-card { display: flex; flex-direction: column; height: 300px; }
   .chat-messages {
     flex: 1;
     overflow-y: auto;
@@ -179,25 +137,10 @@
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border);
   }
-  .chat-msg-user {
-    font-weight: 600;
-    font-size: 13px;
-    color: var(--accent-blue-light);
-  }
-  .chat-msg-text {
-    font-size: 14px;
-    margin-top: 3px;
-    color: #ddd;
-  }
-  .chat-msg-time {
-    font-size: 10px;
-    color: var(--text-secondary);
-    margin-top: 3px;
-  }
-  .chat-input-row {
-    display: flex;
-    gap: 8px;
-  }
+  .chat-msg-user { font-weight: 600; font-size: 13px; color: var(--accent-blue-light); }
+  .chat-msg-text { font-size: 14px; margin-top: 3px; color: #ddd; }
+  .chat-msg-time { font-size: 10px; color: var(--text-secondary); margin-top: 3px; }
+  .chat-input-row { display: flex; gap: 8px; }
   .chat-input-row input {
     flex: 1;
     background: var(--bg-main);
@@ -217,7 +160,7 @@
 
   /* ===== RESPONSIVE ===== */
   @media(max-width: 900px) {
-    .col-3, .col-4, .col-6, .col-8 { grid-column: span 12; }
+    .col-3, .col-4, .col-6 { grid-column: span 12; }
   }
 </style>
 
@@ -246,8 +189,12 @@
         <span class="progress-text">Target: £{{ "%.2f"|format(daily_target) }}</span>
       </div>
       <div class="progress-bar-wrap">
-        {% set pct = (today_total / daily_target * 100) if daily_target > 0 else 0 %}
-        <div class="progress-bar-fill" style="width: {{ pct|round|min(100) }}%; background: {% if pct >= 100 %}#10b981{% else %}#3b82f6{% endif %}"></div>
+        {% if daily_target and daily_target > 0 %}
+          {% set pct = (today_total / daily_target * 100) %}
+          <div class="progress-bar-fill" style="width: {{ pct|round|min(100) }}%; background: {% if pct >= 100 %}#10b981{% else %}#3b82f6{% endif %}"></div>
+        {% else %}
+          <div class="progress-bar-fill" style="width: 0%; background: #3b82f6;"></div>
+        {% endif %}
       </div>
     </div>
 
@@ -261,8 +208,12 @@
         <span class="progress-text">Target: £{{ "%.2f"|format(monthly_target) }}</span>
       </div>
       <div class="progress-bar-wrap">
-        {% set pct_m = (month_total / monthly_target * 100) if monthly_target > 0 else 0 %}
-        <div class="progress-bar-fill" style="width: {{ pct_m|round|min(100) }}%; background: {% if pct_m >= 100 %}#10b981{% else %}#3b82f6{% endif %}"></div>
+        {% if monthly_target and monthly_target > 0 %}
+          {% set pct_m = (month_total / monthly_target * 100) %}
+          <div class="progress-bar-fill" style="width: {{ pct_m|round|min(100) }}%; background: {% if pct_m >= 100 %}#10b981{% else %}#3b82f6{% endif %}"></div>
+        {% else %}
+          <div class="progress-bar-fill" style="width: 0%; background: #3b82f6;"></div>
+        {% endif %}
       </div>
     </div>
 
@@ -270,10 +221,20 @@
     <div class="card col-3">
       <div class="card-title">Daily Target</div>
       <div class="card-value blue">
-        {% if today_total >= daily_target %}✅ Hit{% else %}£{{ "%.2f"|format(daily_target - today_total) }} left{% endif %}
+        {% if daily_target and daily_target > 0 %}
+          {% if today_total >= daily_target %}✅ Hit{% else %}£{{ "%.2f"|format(daily_target - today_total) }} left{% endif %}
+        {% else %}
+          Set target
+        {% endif %}
       </div>
       <div class="progress-row">
-        <span class="progress-text">{{ pct|round(1) }}% complete</span>
+        <span class="progress-text">
+          {% if daily_target and daily_target > 0 %}
+            {{ (today_total / daily_target * 100)|round(1) }}% complete
+          {% else %}
+            Go to Targets page
+          {% endif %}
+        </span>
       </div>
     </div>
 
@@ -281,10 +242,20 @@
     <div class="card col-3">
       <div class="card-title">Monthly Target</div>
       <div class="card-value blue">
-        {% if month_total >= monthly_target %}✅ Hit{% else %}£{{ "%.2f"|format(monthly_target - month_total) }} left{% endif %}
+        {% if monthly_target and monthly_target > 0 %}
+          {% if month_total >= monthly_target %}✅ Hit{% else %}£{{ "%.2f"|format(monthly_target - month_total) }} left{% endif %}
+        {% else %}
+          Set target
+        {% endif %}
       </div>
       <div class="progress-row">
-        <span class="progress-text">{{ pct_m|round(1) }}% complete</span>
+        <span class="progress-text">
+          {% if monthly_target and monthly_target > 0 %}
+            {{ (month_total / monthly_target * 100)|round(1) }}% complete
+          {% else %}
+            Go to Targets page
+          {% endif %}
+        </span>
       </div>
     </div>
   </div>
