@@ -2,31 +2,47 @@
 {% block content %}
 
 <style>
-  .page-wrap { padding: 10px 0; }
+  :root {
+    --bg-main: #0f1118;
+    --bg-card: #1a1d2b;
+    --bg-card-hover: #25293b;
+    --accent-blue: #3b82f6;
+    --accent-blue-light: #60a5fa;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --text-primary: #ffffff;
+    --text-secondary: #9ca3af;
+    --border: #2a2e42;
+  }
 
-  /* ===== TOP HEADER — like Monthly Performance ===== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-main); color: var(--text-primary); }
+
+  .page-wrap { padding: 8px 0; }
+
+  /* ===== TOP HEADER — Identity + Monthly Total ===== */
   .profile-top {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 30px;
+    margin-bottom: 28px;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 24px;
   }
-  .profile-identity {
+  .profile-left {
     display: flex;
     gap: 24px;
     align-items: center;
   }
   .avatar-lg {
-    width: 120px;
-    height: 120px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
     background: linear-gradient(135deg, #2563eb, #7c3aed);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 48px;
+    font-size: 42px;
     overflow: hidden;
     flex-shrink: 0;
   }
@@ -36,119 +52,136 @@
     object-fit: cover;
   }
   .profile-name h1 {
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 700;
     margin-bottom: 4px;
   }
   .profile-meta {
-    color: #999;
     font-size: 14px;
-    margin-bottom: 8px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
   }
   .profile-bio {
-    color: #ccc;
-    max-width: 450px;
-    line-height: 1.5;
+    font-size: 14px;
+    color: #d1d5db;
+    max-width: 400px;
   }
-  .profile-total {
+  .profile-right {
     text-align: right;
   }
   .total-label {
-    font-size: 14px;
-    color: #999;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
   }
   .total-value {
     font-size: 36px;
     font-weight: 700;
-    color: #10b981;
+    color: var(--accent-green);
   }
   .total-value.negative {
-    color: #ef4444;
+    color: var(--accent-red);
   }
 
-  /* ===== STATS ROW — exactly like the reference ===== */
+  /* ===== STATS ROW — 4 Cards ===== */
   .stats-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
   }
   .stat-card {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 8px;
-    padding: 16px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
   }
   .stat-label {
     font-size: 12px;
-    color: #999;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 6px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
   }
   .stat-value {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
   }
-  .stat-value.green { color: #10b981; }
-  .stat-value.red { color: #ef4444; }
+  .stat-value.green { color: var(--accent-green); }
+  .stat-value.red { color: var(--accent-red); }
+  .stat-value.blue { color: var(--accent-blue-light); }
 
   /* ===== EDIT BUTTON ===== */
-  .edit-section {
-    margin-bottom: 30px;
-  }
+  .edit-btn-wrap { margin-bottom: 28px; }
   .edit-btn {
-    display: inline-block;
-    padding: 10px 24px;
-    background: #2563eb;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-blue);
     color: #fff;
+    padding: 10px 22px;
     border-radius: 6px;
     text-decoration: none;
     font-weight: 600;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
   }
-  .edit-btn:hover { background: #3b82f6; }
+  .edit-btn:hover { background: var(--accent-blue-light); }
 
   /* ===== RECENT UPDATES ===== */
   .posts-section h2 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     margin-bottom: 16px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #2a2a2a;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    color: #fff;
   }
   .post-card {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 8px;
-    padding: 18px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 22px;
     margin-bottom: 10px;
   }
   .post-text {
     font-size: 15px;
     line-height: 1.5;
     margin-bottom: 6px;
+    color: #e5e7eb;
   }
   .post-time {
     font-size: 12px;
-    color: #666;
+    color: var(--text-secondary);
   }
   .empty-state {
     text-align: center;
     padding: 40px;
-    color: #666;
+    color: var(--text-secondary);
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media(max-width: 900px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media(max-width: 500px) {
+    .stats-row { grid-template-columns: 1fr; }
+    .profile-top { flex-direction: column; }
+    .profile-right { text-align: left; }
   }
 </style>
 
 <div class="page-wrap">
 
-  <!-- Top Section: Avatar + Name + Monthly Total -->
+  <!-- Top Section: Avatar + Name | Monthly P&L -->
   <div class="profile-top">
-    <div class="profile-identity">
+    <div class="profile-left">
       <div class="avatar-lg">
         {% if profile_user.profile_pic and profile_user.profile_pic != 'default.png' %}
-          <img src="{{ url_for('static', filename='profile_pics/' + profile_user.profile_pic) }}" alt="Profile">
+          <img src="{{ url_for('static', filename='profile_pics/' ~ profile_user.profile_pic) }}" alt="Profile">
         {% else %}
           👤
         {% endif %}
@@ -162,7 +195,7 @@
         </p>
       </div>
     </div>
-    <div class="profile-total">
+    <div class="profile-right">
       <div class="total-label">Monthly P&L</div>
       <div class="total-value {% if month_total < 0 %}negative{% endif %}">
         £{{ "%.2f"|format(month_total) }}
@@ -170,15 +203,15 @@
     </div>
   </div>
 
-  <!-- Stats Row -->
+  <!-- Stats Row — 4 Cards -->
   <div class="stats-row">
     <div class="stat-card">
       <div class="stat-label">Total Posts</div>
-      <div class="stat-value">{{ posts|length }}</div>
+      <div class="stat-value blue">{{ posts|length }}</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Status</div>
-      <div class="stat-value">
+      <div class="stat-value {% if profile_user.is_admin %}green{% else %}blue{% endif %}">
         {% if profile_user.is_admin %}👑 Admin{% else %}Member{% endif %}
       </div>
     </div>
@@ -196,9 +229,9 @@
     </div>
   </div>
 
-  <!-- Edit Button (only for own profile) -->
+  <!-- Edit Button — only for own profile -->
   {% if profile_user.id == current_user.id %}
-  <div class="edit-section">
+  <div class="edit-btn-wrap">
     <a href="{{ url_for('edit_profile') }}" class="edit-btn">✏️ Edit Profile</a>
   </div>
   {% endif %}
