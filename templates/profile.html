@@ -3,9 +3,9 @@
 
 <style>
   :root {
-    --bg-main: #0f1118;
-    --bg-card: #141721;
-    --bg-card-hover: #1e2230;
+    --bg-main: #0a0c10;
+    --bg-card: #121826;
+    --bg-card-2: #1a2133;
     --accent-blue: #2563eb;
     --accent-blue-light: #3b82f6;
     --accent-green: #10b981;
@@ -13,106 +13,233 @@
     --text-primary: #ffffff;
     --text-secondary: #6b7280;
     --text-dim: #9ca3af;
-    --border: #1f2230;
+    --border: #1f2937;
+    --border-light: #2d3a4f;
+    --glow-blue: rgba(59,130,246,0.15);
+    --glow-green: rgba(16,185,129,0.1);
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { 
-    background: var(--bg-main); 
-    color: var(--text-primary); 
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--bg-main);
+    color: var(--text-primary);
     font-family: -apple-system, Segoe UI, Roboto, sans-serif;
   }
 
-  .page-wrap { padding: 10px 0; }
+  .page-wrap {
+    padding: 10px 0 30px;
+  }
 
-  /* ===== TOP HEADER — Avatar + Name | Monthly P&L ===== */
   .profile-top {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 24px;
   }
+
   .profile-left {
     display: flex;
     gap: 20px;
     align-items: center;
   }
+
   .avatar-lg {
     width: 90px;
     height: 90px;
     border-radius: 50%;
     background: linear-gradient(135deg, #2563eb, #4f46e5);
-    display: flex;
+    display: flex: flex;
     align-items: center;
     justify-content: center;
     font-size: 36px;
     overflow: hidden;
+    border: 2px solid var(--accent-blue);
   }
+
   .avatar-lg img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
+
   .profile-name h1 {
     font-size: 24px;
     font-weight: 700;
     margin-bottom: 4px;
   }
+
   .profile-meta {
     font-size: 13px;
     color: var(--text-secondary);
     margin-bottom: 4px;
   }
+
   .profile-bio {
     font-size: 14px;
     color: var(--text-dim);
   }
+
   .profile-right {
     text-align: right;
   }
+
   .total-label {
     font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
     color: var(--text-secondary);
     margin-bottom: 6px;
   }
+
   .total-value {
-    font-size: 32px;
+    font-size: 34px;
     font-weight: 700;
     color: var(--accent-green);
   }
-  .total-value.negative { color: var(--accent-red); }
 
-  /* ===== 4 STAT CARDS ROW ===== */
-  .stats-row {
+  .total-value.negative {
+    color: var(--accent-red);
+  }
+
+  .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 24px;
+    gap: 14px;
+    margin-bottom: 28px;
   }
+
   .stat-card {
     background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 20px;
-    border: 1px solid var(--border);
   }
+
   .stat-label {
-    font-size: 12px;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
     color: var(--text-secondary);
     margin-bottom: 8px;
   }
+
   .stat-value {
     font-size: 22px;
     font-weight: 700;
   }
-  .stat-value.green { color: var(--accent-green); }
-  .stat-value.red { color: var(--accent-red); }
-  .stat-value.blue { color: var(--accent-blue-light); }
 
-  /* ===== EDIT PROFILE BUTTON ===== */
+  .stat-value.green {
+    color: var(--accent-green);
+  }
+
+  .stat-value.red {
+    color: var(--accent-red);
+  }
+
+  .stat-value.blue {
+    color: var(--accent-blue-light);
+  }
+
+  .winrate-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .winrate-ring {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: conic-gradient(
+      var(--accent-green) 0% {{ win_rate }},
+      var(--border) {{ win_rate }} 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .winrate-inner {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-green);
+  }
+
+  .winrate-text h3 {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+
+  .winrate-text p {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .chart-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  .chart-title {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 16px;
+  }
+
+  .mini-chart {
+    height: 120px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .chart-bar {
+    flex: 1;
+    background: var(--accent-blue);
+    border-radius: 4px 4px 0 0;
+    transition: 0.2s;
+  }
+
+  .chart-bar.green {
+    background: var(--accent-green);
+  }
+
+  .chart-bar.red {
+    background: var(--accent-red);
+  }
+
   .edit-btn {
     display: inline-flex;
     align-items: center;
@@ -128,34 +255,42 @@
     margin-bottom: 32px;
     cursor: pointer;
   }
-  .edit-btn:hover { background: var(--accent-blue-light); }
 
-  /* ===== RECENT UPDATES SECTION ===== */
+  .edit-btn:hover {
+    background: var(--accent-blue-light);
+  }
+
   .posts-section h2 {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
-    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border);
-    color: #d1d5db;
+    margin-bottom: 16px;
   }
+
   .post-card {
     background: var(--bg-card);
-    border-radius: 8px;
-    padding: 18px 20px;
-    margin-bottom: 10px;
     border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 10px;
   }
+
   .post-text {
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
+    color: var(--text-primary);
     margin-bottom: 4px;
-    color: #e5e7eb;
   }
+
   .post-time {
     font-size: 11px;
     color: var(--text-secondary);
   }
+
   .empty-state {
     text-align: center;
     padding: 40px;
@@ -163,20 +298,39 @@
     font-size: 14px;
   }
 
-  /* ===== RESPONSIVE ===== */
   @media(max-width: 900px) {
-    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .charts-grid {
+      grid-template-columns: 1fr;
+    }
   }
+
   @media(max-width: 550px) {
-    .profile-top { flex-direction: column; gap: 20px; }
-    .profile-right { text-align: left; }
-    .stats-row { grid-template-columns: 1fr; }
+    .profile-top {
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .profile-right {
+      text-align: left;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .winrate-card {
+      flex-direction: column;
+      text-align: center;
+    }
   }
 </style>
 
 <div class="page-wrap">
 
-  <!-- Top: Avatar + Name | Monthly P&L -->
   <div class="profile-top">
     <div class="profile-left">
       <div class="avatar-lg">
@@ -190,11 +344,15 @@
         <h1>{{ profile_user.username }}</h1>
         <p class="profile-meta">Joined {{ profile_user.created_at.strftime('%B %Y') }}</p>
         <p class="profile-bio">
-          {% if profile_user.bio %}{{ profile_user.bio }}
-          {% else %}No bio yet...{% endif %}
+          {% if profile_user.bio %}
+            {{ profile_user.bio }}
+          {% else %}
+            No bio yet...
+          {% endif %}
         </p>
       </div>
     </div>
+
     <div class="profile-right">
       <div class="total-label">MONTHLY P&L</div>
       <div class="total-value {% if month_total < 0 %}negative{% endif %}">
@@ -203,38 +361,66 @@
     </div>
   </div>
 
-  <!-- 4 Cards Row -->
-  <div class="stats-row">
+  <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-label">TOTAL POSTS</div>
-      <div class="stat-value blue">{{ posts|length }}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">STATUS</div>
-      <div class="stat-value green">
-        {% if profile_user.is_admin %}👑 Admin{% else %}Member{% endif %}
+      <div class="stat-label">TODAY'S P&L</div>
+      <div class="stat-value {% if today_pnl >= 0 %}green{% else %}red{% endif %}">
+        £{{ "%.2f"|format(today_pnl) }}
       </div>
     </div>
+
     <div class="stat-card">
-      <div class="stat-label">ACCOUNT</div>
-      <div class="stat-value green">
-        {% if profile_user.is_approved %}Approved{% else %}Pending{% endif %}
-      </div>
+      <div class="stat-label">TOTAL TRADES</div>
+      <div class="stat-value blue">{{ total_trades }}</div>
     </div>
+
     <div class="stat-card">
-      <div class="stat-label">THIS MONTH</div>
-      <div class="stat-value {% if month_total >= 0 %}green{% else %}red{% endif %}">
-        £{{ "%.2f"|format(month_total) }}
+      <div class="stat-label">WIN STREAK</div>
+      <div class="stat-value green">{{ win_streak }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">AVG DAILY PROFIT</div>
+      <div class="stat-value {% if avg_daily_profit >= 0 %}green{% else %}red{% endif %}">
+        £{{ "%.2f"|format(avg_daily_profit) }}
       </div>
     </div>
   </div>
 
-  <!-- Edit Button -->
+  <div class="winrate-card">
+    <div class="winrate-ring">
+      <div class="winrate-inner">{{ "%.0f"|format(win_rate) }}%</div>
+    </div>
+    <div class="winrate-text">
+      <h3>Win Rate</h3>
+      <p>Percentage of profitable trade days</p>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Daily P&L</div>
+      <div class="mini-chart">
+        {% for day in daily_pnl_chart %}
+          <div class="chart-bar {% if day >= 0 %}green{% else %}red{% endif %}" style="height: {{ day | abs / max_pnl * 100 }}%"></div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Monthly Performance</div>
+      <div class="mini-chart">
+        {% for month in monthly_pnl_chart %}
+          <div class="chart-bar {% if month >= 0 %}green{% else %}red{% endif %}" style="height: {{ month | abs / max_monthly_pnl * 100 }}%"></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
   {% if profile_user.id == current_user.id %}
-  <a href="{{ url_for('edit_profile') }}" class="edit-btn">✏️ Edit Profile</a>
+    <a href="{{ url_for('edit_profile') }}" class="edit-btn">✏️ Edit Profile</a>
   {% endif %}
 
-  <!-- Recent Updates -->
   <div class="posts-section">
     <h2>Recent Updates</h2>
     {% for post in posts %}
