@@ -26,6 +26,10 @@ class DailyEntry(db.Model):
     date = db.Column(db.Date, nullable=False)
     profit_loss = db.Column(db.Float, nullable=False)
     notes = db.Column(db.Text, default="")
+    group_id = db.Column(db.String(100), nullable=True)  # ← NEW: links days together
+    group_total = db.Column(db.Float, nullable=True)       # ← NEW: full amount for the group
+    
+    user = db.relationship('User', backref=db.backref('entries', cascade="all, delete-orphan"))
 
 class UserTarget(db.Model):
     id = db.Column(db.Integer, primary_key=True)
