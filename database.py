@@ -18,8 +18,8 @@ class User(UserMixin, db.Model):
     posts = db.relationship('FeedPost', backref='author', cascade="all, delete-orphan", lazy=True)
     entries = db.relationship('DailyEntry', backref='user', cascade="all, delete-orphan", lazy=True)
     targets = db.relationship('UserTarget', backref='user', cascade="all, delete-orphan", lazy=True)
-    reset_requests = db.relationship('PasswordResetRequest', backref='user', cascade="all, delete-orphan', lazy=True)
-    chat_messages = db.relationship('ChatMessage', backref='user', cascade="all, delete-orphan", lazy=True)
+    reset_requests = db.relationship('PasswordResetRequest', backref='user', cascade="all, delete-orphan", lazy=True)
+    chat_messages = db.relationship('ChatMessage', backref='author', cascade="all, delete-orphan", lazy=True)
 
 
 class DailyEntry(db.Model):
@@ -28,9 +28,9 @@ class DailyEntry(db.Model):
     date = db.Column(db.Date, nullable=False)
     profit_loss = db.Column(db.Float, nullable=False)
     notes = db.Column(db.Text, default="")
-    # === MULTI-DAY GROUP FIELDS ===
-    group_id = db.Column(db.String(100), nullable=True)   # Links days together
-    group_total = db.Column(db.Float, nullable=True)       # Full amount across the group
+    # Multi-day group fields
+    group_id = db.Column(db.String(100), nullable=True)
+    group_total = db.Column(db.Float, nullable=True)
 
 
 class UserTarget(db.Model):
@@ -44,13 +44,14 @@ class FeedPost(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
+    post_type = db.Column(db.String(30), default="status")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     comments = db.relationship('Comment', backref='post', cascade="all, delete-orphan", lazy=True)
 
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, db.ForeignKey('feedpost.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('feed_post.id'), nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
