@@ -5,247 +5,133 @@
   :root {
     --bg-main: #0a0e17;
     --bg-card: #111827;
-    --bg-card-hover: #1a2436;
     --accent-blue: #3b82f6;
-    --accent-blue-soft: rgba(59, 130, 246, 0.15);
     --accent-green: #10b981;
-    --accent-green-soft: rgba(16, 185, 129, 0.12);
     --accent-red: #ef4444;
-    --accent-red-soft: rgba(239, 68, 68, 0.12);
     --text-primary: #ffffff;
     --text-secondary: #6b7280;
-    --text-dim: #9ca3af;
     --border: #1f2937;
-    --border-soft: #2d3a4f;
-    --shadow: 0 4px 20px rgba(0,0,0,0.35);
     --group-outline: #60a5fa;
-    --group-glow: 0 0 0 2px var(--group-outline), 0 0 12px rgba(96, 165, 250, 0.4);
+    --group-glow: 0 0 0 2px var(--group-outline), 0 0 14px rgba(96, 165, 250, 0.4);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { 
-    background: var(--bg-main); 
-    color: var(--text-primary); 
-    font-family: -apple-system, Segoe UI, Roboto, sans-serif; 
-    padding: 24px; 
-    max-width: 1200px; 
-    margin: 0 auto;
-  }
+  body { background: var(--bg-main); color: var(--text-primary); font-family: -apple-system, sans-serif; padding: 24px; max-width: 1200px; margin: 0 auto; }
 
-  /* ===== FLASH MESSAGES ===== */
-  .flash-wrap { margin-bottom: 16px; }
-  .flash { 
-    padding: 12px 18px; 
-    border-radius: 10px; 
-    margin-bottom: 8px;
-    font-weight: 500;
-  }
-  .flash.success { background: var(--accent-green-soft); color: #86efac; border: 1px solid rgba(16, 185, 129, 0.25); }
-  .flash.error { background: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.25); }
+  .flash { padding: 12px 18px; border-radius: 10px; margin-bottom: 12px; }
+  .flash.success { background: rgba(16,185,129,0.12); color: #86efac; border: 1px solid rgba(16,185,129,0.25); }
+  .flash.error { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
 
-  /* ===== GROUP TOTAL BAR ===== */
-  .group-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 20px;
-    background: linear-gradient(90deg, rgba(59, 130, 246, 0.15), transparent);
+  /* ===== MULTI-DAY FORM ===== */
+  .multi-form {
+    background: var(--bg-card);
     border: 1px solid var(--accent-blue);
-    border-radius: 10px;
-    margin-bottom: 20px;
-    transition: all 0.3s ease;
-    opacity: 0;
-    transform: translateY(-10px);
-    height: 0;
-    overflow: hidden;
-  }
-  .group-bar.visible {
-    opacity: 1;
-    transform: translateY(0);
-    height: auto;
+    border-radius: 12px;
+    padding: 20px 24px;
     margin-bottom: 20px;
   }
-  .group-label { font-size: 13px; color: var(--text-secondary); }
-  .group-total { font-size: 22px; font-weight: 700; }
-  .group-total.green { color: var(--accent-green); }
-  .group-total.red { color: var(--accent-red); }
-  .group-clear {
-    background: transparent;
-    border: 1px solid var(--border-soft);
-    color: var(--text-secondary);
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: 0.2s;
+  .multi-form h3 { font-size: 16px; margin-bottom: 14px; color: var(--accent-blue); }
+  .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .form-group { flex: 1; min-width: 160px; }
+  .form-group label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+  .form-group input, .form-group textarea {
+    width: 100%; background: #0a0e17; border: 1px solid var(--border); color: #fff;
+    padding: 10px 12px; border-radius: 6px; font-size: 14px;
   }
-  .group-clear:hover { border-color: var(--accent-red); color: var(--accent-red); }
+  .btn { padding: 10px 20px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
+  .btn.primary { background: var(--accent-blue); color: #fff; }
+  .btn.secondary { background: var(--border); color: #ccc; }
 
   /* ===== CALENDAR HEADER ===== */
-  .cal-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 20px;
-    padding: 20px 24px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
+  .cal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; padding: 20px 24px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 12px;
   }
-  .cal-nav { display: flex; gap: 10px; }
-  .cal-nav a { 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    color: var(--text-primary); 
-    text-decoration: none; 
-    font-size: 18px; 
-    border-radius: 8px; 
-    background: transparent; 
-    border: 1px solid var(--border-soft);
-    transition: all 0.2s ease;
+  .cal-nav a {
+    width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+    color: #fff; text-decoration: none; border-radius: 8px; border: 1px solid #2d3a4f;
   }
-  .cal-nav a:hover { 
-    background: var(--accent-blue); 
-    border-color: var(--accent-blue);
-    transform: scale(1.05);
-  }
-  .cal-title { font-size: 24px; font-weight: 700; letter-spacing: -0.3px; }
-  .cal-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
-
-  /* ===== WEEKDAYS ===== */
-  .weekdays { 
-    display: grid; 
-    grid-template-columns: repeat(7, 1fr); 
-    gap: 10px; 
-    margin-bottom: 12px;
-    padding: 0 4px;
-  }
-  .weekday { 
-    text-align: center; 
-    font-size: 12px; 
-    font-weight: 600;
-    text-transform: uppercase; 
-    letter-spacing: 1px; 
-    color: var(--text-secondary); 
-    padding: 10px 6px;
-  }
+  .cal-title { font-size: 24px; font-weight: 700; }
 
   /* ===== CALENDAR GRID ===== */
+  .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 12px; }
+  .weekday { text-align: center; font-size: 11px; text-transform: uppercase; color: #6b7280; padding: 8px; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
-  .day-cell { 
-    min-height: 120px; 
-    background: var(--bg-card); 
-    border: 1px solid var(--border); 
-    border-radius: 12px; 
-    padding: 14px; 
-    transition: all 0.25s ease;
-    cursor: pointer;
-    position: relative;
+  .day-cell {
+    min-height: 110px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; cursor: pointer; transition: 0.2s;
   }
-  .day-cell:hover:not(.empty) { 
-    border-color: var(--accent-blue); 
-    background: var(--bg-card-hover);
-    transform: translateY(-2px);
-  }
+  .day-cell:hover { border-color: var(--accent-blue); }
   .day-cell.empty { background: transparent; border: none; pointer-events: none; }
-  .day-cell.today { border-color: var(--accent-blue); border-width: 2px; box-shadow: 0 0 0 3px var(--accent-blue-soft); }
-  
-  /* ===== SELECTED GROUP OUTLINE — YOUR FEATURE ===== */
-  .day-cell.selected {
+  .day-cell.today { border-color: var(--accent-blue); border-width: 2px; }
+
+  /* ===== GROUPED DAYS — YOUR FEATURE ===== */
+  .day-cell.group-selected {
     border-color: var(--group-outline);
     box-shadow: var(--group-glow);
     background: rgba(96, 165, 250, 0.08);
   }
-  .day-cell.selected::after {
-    content: "✓";
-    position: absolute;
-    top: 8px;
-    right: 10px;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--group-outline);
+  .day-cell.has-group {
+    border-left: 3px solid var(--group-outline);
+  }
+  .group-badge {
+    display: inline-block; font-size: 9px; background: var(--group-outline);
+    color: #fff; padding: 2px 5px; border-radius: 4px; margin-top: 4px;
   }
 
-  .day-cell.has-profit { border-left: 3px solid var(--accent-green); }
-  .day-cell.has-loss { border-left: 3px solid var(--accent-red); }
-
-  /* ===== DAY CONTENT ===== */
-  .day-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-  .day-num { font-size: 15px; font-weight: 700; color: var(--text-primary); }
-  .day-today-badge { font-size: 10px; background: var(--accent-blue); padding: 2px 8px; border-radius: 10px; font-weight: 600; text-transform: uppercase; }
-  .day-amount { font-size: 18px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.3px; }
+  .day-num { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .day-amount { font-size: 16px; font-weight: 700; }
   .day-amount.green { color: var(--accent-green); }
   .day-amount.red { color: var(--accent-red); }
-  .day-notes { font-size: 11px; color: var(--text-dim); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-bottom: 8px; }
-  .day-add { 
-    display: flex; align-items: center; justify-content: center;
-    height: 100%; min-height: 60px;
-    color: var(--text-secondary); font-size: 13px; text-decoration: none;
-    border: 1px dashed var(--border-soft); border-radius: 8px; margin-top: 8px;
-    transition: 0.15s;
-  }
-  .day-add:hover { border-color: var(--accent-blue); color: var(--accent-blue); background: var(--accent-blue-soft); }
-
-  /* ===== RESPONSIVE ===== */
-  @media(max-width: 900px) {
-    body { padding: 16px; }
-    .cal-grid { gap: 8px; }
-    .day-cell { padding: 10px; min-height: 95px; }
-    .day-amount { font-size: 15px; }
-    .weekday { font-size: 10px; padding: 8px 4px; }
-  }
 </style>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
-    <div class="flash-wrap">
-      {% for cat, msg in messages %}
-        <div class="flash {{ cat }}">{{ msg }}</div>
-      {% endfor %}
-    </div>
+    {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
   {% endif %}
 {% endwith %}
 
-<!-- 📊 GROUP TOTAL BAR — Shows when days selected -->
-<div class="group-bar" id="groupBar">
-  <div>
-    <span class="group-label" id="groupCount">Selected: 0 days</span>
-    <h3 class="group-total" id="groupTotal">£0.00</h3>
+<!-- 📊 MULTI-DAY TRADE FORM -->
+<form class="multi-form" id="multiForm" action="{{ url_for('save_multi_group') }}" method="POST">
+  <h3>📊 Add Multi-Day Trade</h3>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Total Profit (£)</label>
+      <input type="number" step="0.01" name="total_amount" id="tradeAmount" placeholder="e.g. 150.00" required>
+    </div>
+    <div class="form-group">
+      <label>Selected Days</label>
+      <input type="text" id="selectedSummary" placeholder="Click days below" readonly style="background:#0f172a;">
+    </div>
   </div>
-  <button class="group-clear" onclick="clearSelection()">Clear</button>
-</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Notes (optional)</label>
+      <textarea name="notes" rows="2" placeholder="Trade name / notes..."></textarea>
+    </div>
+  </div>
+  <div class="form-row">
+    <button type="button" class="btn secondary" onclick="clearAll()">Clear Selection</button>
+    <button type="submit" class="btn primary">✅ Apply to Selected Days</button>
+  </div>
+  
+  <!-- Hidden inputs for selected dates -->
+  <div id="dateInputs"></div>
+</form>
 
-<!-- Calendar Header -->
+<!-- CALENDAR HEADER -->
 <div class="cal-header">
-  <div class="cal-nav">
-    <a href="{{ url_for('calendar_view', year=year, month=month-1) }}" aria-label="Previous month">&larr;</a>
-  </div>
-  <div style="text-align:center;">
-    <h2 class="cal-title">{{ month_name }} {{ year }}</h2>
-    <p class="cal-subtitle">Click days to group multi-day trades</p>
-  </div>
-  <div class="cal-nav">
-    <a href="{{ url_for('calendar_view', year=year, month=month+1) }}" aria-label="Next month">&rarr;</a>
-  </div>
+  <a href="{{ url_for('calendar_view', year=year, month=month-1) }}">&larr;</a>
+  <h2 class="cal-title">{{ month_name }} {{ year }}</h2>
+  <a href="{{ url_for('calendar_view', year=year, month=month+1) }}">&rarr;</a>
 </div>
 
-<!-- Weekdays -->
 <div class="weekdays">
-  <div class="weekday">Sun</div>
-  <div class="weekday">Mon</div>
-  <div class="weekday">Tue</div>
-  <div class="weekday">Wed</div>
-  <div class="weekday">Thu</div>
-  <div class="weekday">Fri</div>
-  <div class="weekday">Sat</div>
+  <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
 </div>
 
-<!-- Calendar Grid -->
-<div class="cal-grid" id="calendarGrid">
+<div class="cal-grid">
   {% for week in calendar_weeks %}
     {% for day in week %}
       {% if day == 0 %}
@@ -254,30 +140,23 @@
         {% set loop_date = date(year, month, day) %}
         {% set entry = entries.get(loop_date) %}
         {% set is_today = loop_date == today %}
-        {% set day_total = entry.profit_loss if entry else 0 %}
-        
         <div class="day-cell 
           {% if is_today %}today{% endif %}
-          {% if entry and day_total > 0 %}has-profit{% endif %}
-          {% if entry and day_total < 0 %}has-loss{% endif %}
-          {% if entry %}data-amount="{{ day_total }}"{% endif %}
-          data-date="{{ loop_date }}"
-          onclick="toggleDay(this)"
-        ">
-          <div class="day-top">
-            <span class="day-num">{{ day }}</span>
-            {% if is_today %}<span class="day-today-badge">Today</span>{% endif %}
-          </div>
+          {% if entry and entry.group_id %}has-group{% endif %}" 
+          data-date="{{ loop_date }}" 
+          onclick="toggleDay(this)">
+          <div class="day-num">{{ day }}</div>
           
           {% if entry %}
-            <div class="day-amount {% if day_total >= 0 %}green{% else %}red{% endif %}">
-              £{{ "%.2f"|format(day_total) }}
+            <div class="day-amount {% if entry.profit_loss >= 0 %}green{% else %}red{% endif %}">
+              £{{ "%.2f"|format(entry.profit_loss) }}
             </div>
-            {% if entry.notes %}
-              <p class="day-notes" title="{{ entry.notes }}">{{ entry.notes }}</p>
+            {% if entry.group_id %}
+              <span class="group-badge">🔗 GROUP</span>
             {% endif %}
-          {% else %}
-            <a href="{{ url_for('dashboard') }}" class="day-add" onclick="event.stopPropagation()">+ Add Entry</a>
+            {% if entry.notes %}
+              <div style="font-size:10px; color:#888; margin-top:4px;">{{ entry.notes }}</div>
+            {% endif %}
           {% endif %}
         </div>
       {% endif %}
@@ -286,49 +165,49 @@
 </div>
 
 <script>
-// ===== MULTI-SELECT GROUP LOGIC =====
-let selectedDays = {};
+// ===== YOUR MULTI-DAY SELECTOR =====
+let selectedDays = [];
 
 function toggleDay(cell) {
-  const dateKey = cell.dataset.date;
-  const amount = parseFloat(cell.dataset.amount) || 0;
-  
   if (cell.classList.contains('empty')) return;
   
-  // Toggle selection
-  if (selectedDays[dateKey]) {
-    delete selectedDays[dateKey];
-    cell.classList.remove('selected');
+  const date = cell.dataset.date;
+  const idx = selectedDays.indexOf(date);
+  
+  if (idx > -1) {
+    selectedDays.splice(idx, 1);
+    cell.classList.remove('group-selected');
   } else {
-    selectedDays[dateKey] = amount;
-    cell.classList.add('selected');
+    selectedDays.push(date);
+    cell.classList.add('group-selected');
   }
   
-  updateGroupTotal();
+  updateSummary();
 }
 
-function updateGroupTotal() {
-  const days = Object.keys(selectedDays).length;
-  const total = Object.values(selectedDays).reduce((sum, val) => sum + val, 0);
+function updateSummary() {
+  document.getElementById('selectedSummary').value = 
+    selectedDays.length > 0 ? `${selectedDays.length} days selected` : 'Click days below';
   
-  const bar = document.getElementById('groupBar');
-  const countEl = document.getElementById('groupCount');
-  const totalEl = document.getElementById('groupTotal');
-  
-  if (days > 0) {
-    bar.classList.add('visible');
-    countEl.textContent = `Selected: ${days} day${days !== 1 ? 's' : ''}`;
-    totalEl.textContent = `£${total.toFixed(2)}`;
-    totalEl.className = 'group-total ' + (total >= 0 ? 'green' : 'red');
-  } else {
-    bar.classList.remove('visible');
-  }
+  // Update hidden inputs for form submission
+  const container = document.getElementById('dateInputs');
+  container.innerHTML = '';
+  selectedDays.forEach(d => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'dates[]';
+    input.value = d;
+    container.appendChild(input);
+  });
 }
 
-function clearSelection() {
-  selectedDays = {};
-  document.querySelectorAll('.day-cell.selected').forEach(c => c.classList.remove('selected'));
-  updateGroupTotal();
+function clearAll() {
+  selectedDays = [];
+  document.querySelectorAll('.day-cell.group-selected').forEach(c => {
+    c.classList.remove('group-selected');
+  });
+  document.getElementById('tradeAmount').value = '';
+  updateSummary();
 }
 </script>
 
