@@ -5,155 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GroupGain</title>
     <style>
-        /* ===== COLOUR THEME — DARK PRO ===== */
         :root {
-            --bg-main: #0a0e17;
-            --bg-sidebar: #111827;
-            --bg-card: #1f2937;
-            --bg-hover: #374151;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --green: #10b981;
-            --red: #ef4444;
-            --text: #f3f4f6;
-            --text-dim: #9ca3af;
-            --border: #374151;
-            --sidebar-width: 260px;
-            --sidebar-collapsed: 70px;
+            --bg-main: #0a0e17; --bg-sidebar: #111827; --bg-card: #1f2937;
+            --bg-hover: #374151; --accent: #3b82f6; --accent-hover: #2563eb;
+            --green: #10b981; --red: #ef4444; --text: #f3f4f6; --text-dim: #9ca3af;
+            --border: #374151; --sidebar-width: 260px;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, Segoe UI, Roboto, sans-serif; }
         body { background: var(--bg-main); color: var(--text); min-height: 100vh; }
 
-        /* ===== SIDEBAR CONTAINER ===== */
+        /* Sliding Sidebar */
         .sidebar {
-            position: fixed; top: 0; left: 0; height: 100vh;
-            width: var(--sidebar-width);
-            background: var(--bg-sidebar);
-            border-right: 1px solid var(--border);
-            transition: transform 0.3s ease, width 0.3s ease;
-            z-index: 100;
-            overflow: hidden;
+            position: fixed; top: 0; left: 0; height: 100vh; width: var(--sidebar-width);
+            background: var(--bg-sidebar); border-right: 1px solid var(--border);
+            transition: transform 0.3s ease; z-index: 100; overflow: hidden;
         }
-        .sidebar.collapsed {
-            transform: translateX(-100%);
-        }
+        .sidebar.collapsed { transform: translateX(-100%); }
 
-        /* ===== TOGGLE BUTTON ===== */
         .toggle-btn {
             position: fixed; top: 15px; left: 15px; z-index: 200;
             background: var(--accent); border: none; color: white;
-            width: 44px; height: 44px; border-radius: 10px;
-            cursor: pointer; font-size: 20px; font-weight: bold;
-            transition: background 0.2s;
+            width: 44px; height: 44px; border-radius: 10px; cursor: pointer;
+            font-size: 20px; font-weight: bold; transition: background 0.2s;
         }
         .toggle-btn:hover { background: var(--accent-hover); }
-        .sidebar.collapsed + .toggle-btn { left: 15px; }
 
-        /* ===== SIDEBAR INNER ===== */
         .sidebar-inner { padding: 20px 16px; height: 100%; overflow-y: auto; }
         .sidebar-logo {
-            font-size: 22px; font-weight: 800; color: var(--accent);
-            margin-bottom: 30px; display: flex; align-items: center; gap: 10px;
+            font-size: 22px; font-weight: 800; color: var(--accent); margin-bottom: 30px;
         }
-        .sidebar-logo span { font-size: 14px; color: var(--text-dim); font-weight: normal; }
-
         .sidebar-nav { display: flex; flex-direction: column; gap: 6px; }
         .sidebar-nav a {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 16px; border-radius: 10px;
-            color: var(--text-dim); text-decoration: none;
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+            border-radius: 10px; color: var(--text-dim); text-decoration: none;
             transition: all 0.25s ease; margin-bottom: 2px;
         }
-        .sidebar-nav a:hover {
-            background: var(--bg-hover); color: white; transform: translateX(4px);
-        }
+        .sidebar-nav a:hover { background: var(--bg-hover); color: white; transform: translateX(4px); }
         .sidebar-nav a.active {
-            background: rgba(59, 130, 246, 0.15);
-            color: var(--accent); border-left: 3px solid var(--accent);
+            background: rgba(59, 130, 246, 0.15); color: var(--accent);
+            border-left: 3px solid var(--accent);
         }
-        .sidebar-nav a span:first-child { font-size: 20px; }
+        .sidebar-nav a:last-child { margin-top: 20px; color: var(--red); }
 
-        /* ===== MAIN CONTENT AREA ===== */
         .main-content {
-            margin-left: var(--sidebar-width);
-            padding: 25px;
-            transition: margin-left 0.3s ease;
-            min-height: 100vh;
+            margin-left: var(--sidebar-width); padding: 25px;
+            transition: margin-left 0.3s ease; min-height: 100vh;
         }
         .main-content.full-width { margin-left: 0; }
 
-        /* ===== FLASH MESSAGES ===== */
         .flash-container { max-width: 700px; margin: 0 auto 20px; }
         .flash { padding: 14px 20px; border-radius: 10px; margin-bottom: 10px; }
         .flash.success { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; }
         .flash.error { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; }
         .flash.info { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .sidebar { width: 240px; }
-            .main-content { padding: 15px; }
-        }
     </style>
 </head>
 <body>
-
-    <!-- Sliding Sidebar -->
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-inner">
-            <div class="sidebar-logo">
-                💰 GroupGain
-                <span>Profit Tracker</span>
-            </div>
-
+            <div class="sidebar-logo">💰 GroupGain</div>
             <nav class="sidebar-nav">
                 <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
-                    <span>📊</span>
-                    <span>Dashboard</span>
+                    <span>📊</span><span>Dashboard</span>
                 </a>
                 <a href="{{ url_for('calendar_view') }}" class="{% if request.endpoint == 'calendar_view' %}active{% endif %}">
-                    <span>📅</span>
-                    <span>Calendar</span>
+                    <span>📅</span><span>Calendar</span>
                 </a>
                 <a href="{{ url_for('feed') }}" class="{% if request.endpoint == 'feed' %}active{% endif %}">
-                    <span>📝</span>
-                    <span>Feed</span>
+                    <span>📝</span><span>Feed</span>
                 </a>
                 <a href="{{ url_for('targets') }}" class="{% if request.endpoint == 'targets' %}active{% endif %}">
-                    <span>🎯</span>
-                    <span>Targets</span>
+                    <span>🎯</span><span>Targets</span>
                 </a>
                 <a href="{{ url_for('profile', username=current_user.username) }}" class="{% if request.endpoint == 'profile' %}active{% endif %}">
-                    <span>👤</span>
-                    <span>My Profile</span>
+                    <span>👤</span><span>My Profile</span>
                 </a>
                 <a href="{{ url_for('edit_profile') }}" class="{% if request.endpoint == 'edit_profile' %}active{% endif %}">
-                    <span>✏️</span>
-                    <span>Edit Profile</span>
+                    <span>✏️</span><span>Edit Profile</span>
                 </a>
                 <a href="{{ url_for('share') }}" class="{% if request.endpoint == 'share' %}active{% endif %}">
-                    <span>🔗</span>
-                    <span>Share / QR</span>
+                    <span>🔗</span><span>Share / QR</span>
                 </a>
                 {% if current_user.is_admin %}
                 <a href="{{ url_for('admin_panel') }}" class="{% if request.endpoint == 'admin_panel' %}active{% endif %}">
-                    <span>⚙️</span>
-                    <span>Admin Panel</span>
+                    <span>⚙️</span><span>Admin Panel</span>
                 </a>
                 {% endif %}
-                <a href="{{ url_for('logout') }}" style="margin-top: 20px; color: var(--red);">
-                    <span>🚪</span>
-                    <span>Log Out</span>
+                <a href="{{ url_for('logout') }}">
+                    <span>🚪</span><span>Log Out</span>
                 </a>
             </nav>
         </div>
     </nav>
 
-    <!-- Toggle Button -->
     <button class="toggle-btn" id="toggleBtn" onclick="toggleSidebar()">☰</button>
 
-    <!-- Main Content -->
     <main class="main-content" id="mainContent">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -164,33 +110,21 @@
             </div>
             {% endif %}
         {% endwith %}
-
         {% block content %}{% endblock %}
     </main>
 
     <script>
-        // ===== SLIDING SIDEBAR TOGGLE =====
-        const sidebar = document.getElementById('sidebar');
-        const mainContent = document.getElementById('mainContent');
-        const toggleBtn = document.getElementById('toggleBtn');
-
         function toggleSidebar() {
-            sidebar.classList.toggle('collapsed');
-            mainContent.classList.toggle('full-width');
-            
-            // Save preference
-            const isCollapsed = sidebar.classList.contains('collapsed');
-            localStorage.setItem('sidebarCollapsed', isCollapsed);
+            document.getElementById('sidebar').classList.toggle('collapsed');
+            document.getElementById('mainContent').classList.toggle('full-width');
+            localStorage.setItem('sidebarCollapsed', document.getElementById('sidebar').classList.contains('collapsed'));
         }
-
-        // Load saved state on page load
         window.addEventListener('DOMContentLoaded', () => {
             if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                sidebar.classList.add('collapsed');
-                mainContent.classList.add('full-width');
+                document.getElementById('sidebar').classList.add('collapsed');
+                document.getElementById('mainContent').classList.add('full-width');
             }
         });
     </script>
-
 </body>
 </html>
