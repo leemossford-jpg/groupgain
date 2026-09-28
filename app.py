@@ -29,6 +29,7 @@ os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 db.init_app(app)
 bcrypt = Bcrypt(app)
+
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 login_manager.login_message_category = "info"
@@ -37,20 +38,26 @@ login_manager.login_message_category = "info"
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ===== CREATE TABLES & ADMIN (run once) =====
+# ===== CREATE TABLES & ADMIN =====
 with app.app_context():
     db.create_all()
     if not User.query.filter_by(username="admin").first():
         admin_pass = bcrypt.generate_password_hash("Admin123!").decode("utf-8")
-        admin = User(username="admin", password_hash=admin_pass, is_approved=True, is_admin=True, bio="GroupGain Founder 👑")
+        admin = User(
+            username="admin",
+            password_hash=admin_pass,
+            is_approved=True,
+            is_admin=True,
+            bio="GroupGain Founder 👑"
+        )
         db.session.add(admin)
         db.session.commit()
         print("✅ Admin created: admin / Admin123!")
 
-# ===== UTILITY — Get Public URL =====
+# ===== GET PUBLIC URL =====
 def get_public_url():
-    if 'RENDER' in os.environ:
-        return os.environ.get('RENDER_EXTERNAL_URL', None)
+    if "RENDER" in os.environ:
+        return os.environ.get("RENDER_EXTERNAL_URL")
     try:
         import requests
         r = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=2)
@@ -154,17 +161,22 @@ def dashboard():
         messages=messages
     )
 
-# ===== ADD ENTRY =====
+# ===== ADD SINGLE ENTRY =====
 @app.route("/add-entry", methods=["POST"])
 @login_required
 def add_entry():
     d = datetime.strptime(request.form["entry_date"], "%Y-%m-%d").date()
     pl = float(request.form["profit_loss"])
     notes = request.form.get("notes", "")
-    db.session.add(DailyEntry(user_id=current_user.id, date=d, profit_loss=pl, notes=notes))
+    db.session.add(DailyEntry(
+        user_id=current_user.id,
+        date=d,
+        profit_loss=pl,
+        notes=notes
+    ))
     db.session.commit()
     flash("Entry added", "success")
-    return redirect(url_for("dashboard"))
+    return redirect(url_for("calendar_view"))
 
 # ===== CALENDAR =====
 @app.route("/calendar")
@@ -172,11 +184,34 @@ def add_entry():
 def calendar_view():
     today = date.today()
     
-    # Get year/month from URL params OR use today
     year = request.args.get("year", today.year, type=int)
     month = request.args.get("month", today.month, type=int)
+    
+    if month < 1:
+        month = 12
+        year -= 1
+    if month > 12:
+        month = 1
+        year += 1
+    
+    cal = calendar.monthcalendar(year, month)
+    month_name = calendar.month_name[month]
+    
+    entries = {}
+    for e in DailyEntry.query.filter_by(user_id=current_user.id).all():
+        entries[e.date] = e
+    
+    return render_template("calendar.html",
+        year=year,
+        month=month,
+        month_name=month_name,
+        calendar_weeks=cal,
+        entries=entries,
+        today=today,
+        date=date
+    )
 
-    # ===== SAVE MULTI-DAY GROUP =====
+# ===== SAVE MULTI-DAY GROUP =====
 @app.route("/save-multi-group", methods=["POST"])
 @login_required
 def save_multi_group():
@@ -188,14 +223,12 @@ def save_multi_group():
         flash("Select days and enter amount", "error")
         return redirect(url_for("calendar_view"))
     
-    # Create unique group ID
     group_id = f"group_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
     
     for d_str in dates_raw:
         d = datetime.strptime(d_str, "%Y-%m-%d").date()
-        
-        # Check if entry already exists for this day — update or create
         entry = DailyEntry.query.filter_by(user_id=current_user.id, date=d).first()
+        
         if entry:
             entry.profit_loss = amount
             entry.group_id = group_id
@@ -216,32 +249,8 @@ def save_multi_group():
     db.session.commit()
     flash(f"✅ £{amount:.2f} applied to {len(dates_raw)} days", "success")
     return redirect(url_for("calendar_view"))
-    # Handle month rollover
-    if month < 1:
-        month = 12
-        year -= 1
-    if month > 12:
-        month = 1
-        year += 1
-    
-    cal = calendar.monthcalendar(year, month)
-    month_name = calendar.month_name[month]
-    
-    # Get all entries for current user
-    entries = {}
-    for e in DailyEntry.query.filter_by(user_id=current_user.id).all():
-        entries[e.date] = e
-    
-    return render_template("calendar.html",
-        year=year,
-        month=month,
-        month_name=month_name,
-        calendar_weeks=cal,
-        entries=entries,
-        today=today,
-        date=date
-    )
 
+# ===== EDIT / DELETE ENTRY =====
 @app.route("/edit-entry/<int:eid>", methods=["POST"])
 @login_required
 def edit_entry(eid):
@@ -300,7 +309,11 @@ def create_post():
 @login_required
 def add_comment(pid):
     FeedPost.query.get_or_404(pid)
-    c = Comment(post_id=pid, author_id=current_user.id, content=request.form.get("content", ""))
+    c = Comment(
+        post_id=pid,
+        author_id=current_user.id,
+        content=request.form.get("content", "")
+    )
     db.session.add(c)
     db.session.commit()
     return redirect(url_for("feed"))
@@ -323,8 +336,9 @@ def profile(username):
     today = date.today()
     month_start = date(today.year, today.month, 1)
     
-    all_entries = DailyEntry.query.filter_by(user_id=profile_user.id).order_by(DailyEntry.date.desc()).all()
-    month_entries = DailyEntry.query.filter(DailyEntry.user_id==profile_user.id, DailyEntry.date>=month_start).all()
+    all_entries = DailyEntry.query.filter_by(user_id=profile_user.id)\
+        .order_by(DailyEntry.date.desc()).all()
+    month_entries = [e for e in all_entries if e.date >= month_start]
     today_entries = [e for e in all_entries if e.date == today]
     
     today_pnl = sum(e.profit_loss for e in today_entries)
@@ -369,10 +383,14 @@ def profile(username):
             m_end = date(y + 1, 1, 1) - timedelta(days=1)
         else:
             m_end = date(y, m + 1, 1) - timedelta(days=1)
-        monthly_pnl_chart.append(sum(e.profit_loss for e in all_entries if m_start <= e.date <= m_end))
+        monthly_pnl_chart.append(sum(
+            e.profit_loss for e in all_entries
+            if m_start <= e.date <= m_end
+        ))
     max_monthly_pnl = max((abs(v) if v != 0 else 1 for v in monthly_pnl_chart), default=1)
     
-    posts = FeedPost.query.filter_by(author_id=profile_user.id).order_by(FeedPost.created_at.desc()).all()
+    posts = FeedPost.query.filter_by(author_id=profile_user.id)\
+        .order_by(FeedPost.created_at.desc()).all()
     
     return render_template("profile.html",
         profile_user=profile_user,
@@ -428,7 +446,7 @@ def share():
     qr_b64 = base64.b64encode(buf.getvalue()).decode()
     return render_template("share.html", signup_url=signup_url, qr_code=qr_b64)
 
-# ===== ADMIN =====
+# ===== ADMIN PANEL =====
 @app.route("/admin")
 @login_required
 def admin_panel():
