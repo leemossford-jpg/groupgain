@@ -1,48 +1,120 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>📅 Calendar — {{ month_name }}</h1>
-
-<div style="display:flex;gap:15px;margin-bottom:20px;">
-    <a href="{{ url_for('calendar_view', year=year if month>1 else year-1, month=month-1 if month>1 else 12) }}" style="padding:8px 12px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;">← Prev</a>
-    <span style="font-size:18px;font-weight:600;">{{ month_name }}</span>
-    <a href="{{ url_for('calendar_view', year=year if month<12 else year+1, month=month+1 if month<12 else 1) }}" style="padding:8px 12px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;">Next →</a>
-</div>
 
 <style>
-.calendar-grid {display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
-.calendar-day {background:#1a1a1a;border-radius:8px;padding:12px;min-height:80px;border:1px solid #2a2a2a;}
-.calendar-day.today {border-color:#2563eb;box-shadow:0 0 0 1px #2563eb;}
-.calendar-day.other-month {opacity:0.3;}
-.day-num {font-weight:600;margin-bottom:5px;}
-.profit {color:#10b981;font-weight:600;}
-.loss {color:#ef4444;font-weight:600;}
+  :root {
+    --bg-main: #0a0e17;
+    --bg-card: #111827;
+    --accent-blue: #3b82f6;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --text-primary: #ffffff;
+    --text-secondary: #6b7280;
+    --text-dim: #9ca3af;
+    --border: #1f2937;
+    --border-light: #2d3a4f;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-main); color: var(--text-primary); font-family: -apple-system, Segoe UI, Roboto, sans-serif; padding: 20px; max-width: 1100px; margin: 0 auto; }
+
+  .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .cal-nav a { color: var(--accent-blue); text-decoration: none; font-size: 18px; padding: 8px 14px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border); }
+  .cal-title { font-size: 22px; font-weight: 700; }
+
+  .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 8px; }
+  .weekday { text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); padding: 8px; }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .day-cell { min-height: 100px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; transition: 0.2s; }
+  .day-cell:hover { border-color: var(--accent-blue); }
+  .day-cell.empty { background: transparent; border: none; }
+  .day-cell.today { border-color: var(--accent-blue); border-width: 2px; }
+
+  .day-num { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .day-total { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .day-total.green { color: var(--accent-green); }
+  .day-total.red { color: var(--accent-red); }
+  .day-notes { font-size: 10px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 8px; }
+
+  .add-link, .edit-link { font-size: 11px; color: var(--accent-blue); text-decoration: none; margin-right: 6px; }
+  .add-link:hover, .edit-link:hover { text-decoration: underline; }
+
+  .form-modal { background: rgba(0,0,0,0.7); position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .form-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 10px; padding: 24px; width: 90%; max-width: 420px; }
+  .form-card h3 { margin-bottom: 16px; font-size: 18px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+  .form-group input, .form-group textarea { width: 100%; background: var(--bg-main); border: 1px solid var(--border-light); color: #fff; padding: 10px 12px; border-radius: 6px; font-size: 14px; }
+  .form-buttons { display: flex; gap: 10px; margin-top: 18px; }
+  .btn { flex: 1; padding: 10px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
+  .btn.primary { background: var(--accent-blue); color: #fff; }
+  .btn.secondary { background: var(--border); color: var(--text-primary); }
+
+  .flash { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; }
+  .flash.success { background: #1a3d2f; color: #86efac; }
+  .flash.error { background: #3d1f1f; color: #fca5a5; }
+
+  @media(max-width: 768px) {
+    .cal-grid { gap: 4px; }
+    .day-cell { padding: 6px; min-height: 80px; }
+    .weekday { font-size: 10px; padding: 6px; }
+  }
 </style>
 
-<div class="calendar-grid">
-    {% for day_name in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
-    <div style="text-align:center;font-weight:600;padding:8px;color:#999;">{{ day_name }}</div>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for cat, msg in messages %}
+      <div class="flash {{ cat }}">{{ msg }}</div>
     {% endfor %}
-    
-    {% for week in calendar_weeks %}
-        {% for day in week %}
-            {% if day == 0 %}
-            <div class="calendar-day other-month"></div>
-            {% else %}
-            {% set day_date = date(year, month, day) %}
-            {% set entry = entry_map.get(day_date) %}
-            <div class="calendar-day {% if day_date == today %}today{% endif %}">
-                <div class="day-num">{{ day }}</div>
-                {% if entry %}
-                    {% if entry.profit_loss >= 0 %}
-                    <div class="profit">+£{{ "%.2f"|format(entry.profit_loss) }}</div>
-                    {% else %}
-                    <div class="loss">£{{ "%.2f"|format(entry.profit_loss) }}</div>
-                    {% endif %}
-                    {% if entry.notes %}<small style="color:#999;">{{ entry.notes[:15] }}...</small>{% endif %}
-                {% endif %}
-            </div>
-            {% endif %}
-        {% endfor %}
-    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="cal-header">
+  <a href="{{ url_for('calendar_view', year=year, month=month-1) }}">&larr;</a>
+  <h2 class="cal-title">{{ month_name }} {{ year }}</h2>
+  <a href="{{ url_for('calendar_view', year=year, month=month+1) }}">&rarr;</a>
 </div>
+
+<div class="weekdays">
+  <div class="weekday">Sun</div>
+  <div class="weekday">Mon</div>
+  <div class="weekday">Tue</div>
+  <div class="weekday">Wed</div>
+  <div class="weekday">Thu</div>
+  <div class="weekday">Fri</div>
+  <div class="weekday">Sat</div>
+</div>
+
+<div class="cal-grid">
+  {% for week in calendar_weeks %}
+    {% for day in week %}
+      {% if day == 0 %}
+        <div class="day-cell empty"></div>
+      {% else %}
+        {% set loop_date = date(year, month, day) %}
+        {% set entry = entries.get(loop_date) %}
+        <div class="day-cell {% if loop_date == today %}today{% endif %}">
+          <div class="day-num">{{ day }}</div>
+          
+          {% if entry %}
+            <div class="day-total {% if entry.profit_loss >= 0 %}green{% else %}red{% endif %}">
+              £{{ "%.2f"|format(entry.profit_loss) }}
+            </div>
+            {% if entry.notes %}
+              <div class="day-notes" title="{{ entry.notes }}">{{ entry.notes }}</div>
+            {% endif %}
+            <a href="#edit-{{ loop_date }}" class="edit-link">Edit</a>
+            <form action="{{ url_for('delete_entry', eid=entry.id) }}" method="post" style="display:inline" onsubmit="return confirm('Delete this entry?');">
+              <button type="submit" class="edit-link" style="background:none; border:none; color:var(--accent-red); cursor:pointer; padding:0; font-size:11px;">Delete</button>
+            </form>
+          {% else %}
+            <a href="#add-{{ loop_date }}" class="add-link">+ Add Entry</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+</div>
+
 {% endblock %}
