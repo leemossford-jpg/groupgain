@@ -1,42 +1,30 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <title>Log Trade — GroupGain</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    *{box-sizing:border-box;}
-    :root{--bg:#f0f4f8;--card:white;--text:#1e293b;--accent:#2563eb;--border:#e2e8f0;}
-    body{font-family:system-ui;background:var(--bg);color:var(--text);padding:2rem;}
-    .c{max-width:600px;margin:0 auto;background:var(--card);padding:2rem;border-radius:16px;}
-    label{display:block;margin-top:1.25rem;font-weight:600;}
-    input,select,textarea{width:100%;padding:.85rem;margin-top:.5rem;border:1px solid var(--border);border-radius:8px;font-size:1rem;background:transparent;color:var(--text);}
-    button{margin-top:1.5rem;width:100%;padding:.85rem;background:var(--accent);color:white;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;}
-    a{display:inline-block;margin-top:1rem;color:var(--accent);text-decoration:none;}
-  </style>
-</head>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Add Trade — GroupGain</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:#0b1120;min-height:100vh;color:#e6efff;padding:2rem}
+.container{max-width:600px;margin:0 auto}
+a.back{color:#7b8ab8;text-decoration:none;display:inline-block;margin-bottom:1.5rem}
+a.back:hover{color:#60a5fa}
+form{background:#131c33;padding:2rem;border-radius:16px;border:1px solid #1e2d54;display:flex;flex-direction:column;gap:1rem}
+label{color:#7b8ab8;font-size:.9rem}
+input,select,textarea{padding:.9rem 1rem;border-radius:10px;border:1px solid #1e2d54;background:#1a2542;color:#fff;font-size:1rem;margin-top:.3rem;width:100%}
+button{padding:.9rem;border-radius:10px;border:none;background:#3b82f6;color:#fff;font-weight:600;font-size:1rem;cursor:pointer;margin-top:.5rem}
+</style></head>
 <body>
-  <div class="c">
-    <h2>📝 Log New Trade</h2>
-    <form method="post">
-      <label>Symbol</label>
-      <input name="symbol" placeholder="e.g. AAPL, BTC, NG" required>
-      <label>Asset Type</label>
-      <select name="asset_type">
-        <option>Stocks</option><option>Crypto</option><option>Forex</option><option>Commodities</option>
-      </select>
-      <label>Entry Price</label>
-      <input name="entry_price" type="number" step="0.01" required>
-      <label>Exit Price <span style="font-weight:normal;opacity:.7;">(leave blank if open)</span></label>
-      <input name="exit_price" type="number" step="0.01">
-      <label>Quantity / Size</label>
-      <input name="quantity" type="number" step="0.01" required>
-      <label>Tags <span style="font-weight:normal;opacity:.7;">(comma separated)</span></label>
-      <input name="tags" placeholder="#scalp, #swing">
-      <label>Notes / Strategy</label>
-      <textarea name="notes" rows="4" placeholder="Entry reason, exit plan…"></textarea>
-      <button>Save Trade</button>
-    </form>
-    <a href="{{url_for('dashboard')}}">← Back to Dashboard</a>
-  </div>
-</body>
-</html>
+<div class="container">
+<a href="{{url_for('dashboard')}}" class="back">← Back</a>
+<h1>➕ Add Trade</h1>
+<form method="post">
+<label>Symbol<input type="text" name="symbol" placeholder="BTC, AAPL, NG" required></label>
+<label>Asset Type<select name="asset_type"><option>Stock</option><option>Crypto</option><option>Forex</option><option>Commodity</option><option>Index</option></select></label>
+<label>Entry Price<input type="number" step=".0001" name="entry_price" required></label>
+<label>Exit Price<input type="number" step=".0001" name="exit_price" placeholder="Leave blank if open"></label>
+<label>Quantity<input type="number" step=".01" name="quantity" required></label>
+<label>Tags<input type="text" name="tags" placeholder="long, swing, breakout"></label>
+<label>Notes<textarea name="notes" rows="3"></textarea></label>
+<button>Save Trade</button>
+</form>
+</div>
+</body></html>

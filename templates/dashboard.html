@@ -6,251 +6,153 @@
     <title>GroupGain — Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <style>
-        :root {
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #1e293b;
-            --muted: #64748b;
-            --border: #e2e8f0;
-            --accent: #2563eb;
-            --green: #16a34a;
-            --red: #dc2626;
-        }
-        body.dark {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --text: #f1f5f9;
-            --border: #334155;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, sans-serif; }
-        body { background: var(--bg); color: var(--text); min-height: 100vh; }
-        .layout { display: flex; min-height: 100vh; }
-        aside { width: 240px; background: var(--card); border-right: 1px solid var(--border); padding: 1.5rem; }
-        aside h2 { font-size: 1.2rem; margin-bottom: 2rem; color: var(--accent); }
-        aside nav a { display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.5rem; color: var(--text); text-decoration: none; }
-        aside nav a:hover, aside nav a.active { background: var(--accent); color: white; }
-        main { flex: 1; padding: 2rem; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        .top-bar h1 { font-size: 1.8rem; }
-        .top-bar .actions a { margin-left: 1rem; text-decoration: none; color: var(--accent); font-weight: 500; }
-        .flash { padding: 1rem; margin-bottom: 1.5rem; border-radius: 0.5rem; background: #dbeafe; color: #1e40af; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-        .card { background: var(--card); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border); }
-        .card h3 { font-size: 1rem; color: var(--muted); margin-bottom: 0.5rem; }
-        .card .value { font-size: 2rem; font-weight: 700; }
-        .positive { color: var(--green); }
-        .negative { color: var(--red); }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
-        th { color: var(--muted); font-weight: 600; }
-        .progress-bar { height: 8px; background: var(--border); border-radius: 4px; margin-top: 0.5rem; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.3s; }
-        .chart-container { position: relative; height: 300px; margin-top: 1rem; }
+        :root{--bg:#0b1120;--card:#131c33;--accent:#3b82f6;--ok:#10b981;--bad:#ef4444;--text:#e6efff;--muted:#7b8ab8;--border:#1e2d54;--r:14px}
+        *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+        body{background:var(--bg);color:var(--text);min-height:100vh}
+        .grid{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+        aside{background:var(--card);border-right:1px solid var(--border);padding:1.5rem;display:flex;flex-direction:column}
+        .logo{font-size:1.3rem;font-weight:800;color:#60a5fa;margin-bottom:2rem}
+        nav{display:flex;flex-direction:column;gap:.4rem;flex:1}
+        nav a{display:flex;align-items:center;gap:.75rem;padding:.9rem 1rem;border-radius:var(--r);color:var(--muted);text-decoration:none;transition:.2s}
+        nav a:hover{background:rgba(59,130,246,.1);color:var(--text)}
+        nav a.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(59,130,246,.25)}
+        main{padding:2rem 2.5rem}
+        .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
+        .btn{padding:.75rem 1.25rem;border-radius:var(--r);border:none;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;transition:.2s}
+        .btn-primary{background:var(--accent);color:#fff}
+        .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+        .flash{padding:1rem 1.25rem;margin-bottom:1.5rem;border-radius:var(--r);background:rgba(59,130,246,.1);border-left:3px solid var(--accent)}
+        .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-bottom:2rem}
+        .stat{background:var(--card);padding:1.5rem;border-radius:var(--r);border:1px solid var(--border)}
+        .stat-val{font-size:2rem;font-weight:800}
+        .up{color:var(--ok)}.down{color:var(--bad)}
+        .panel{background:var(--card);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:1.5rem}
+        .ph{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);font-weight:600}
+        table{width:100%;border-collapse:collapse}
+        th,td{padding:1rem 1.5rem;text-align:left;border-bottom:1px solid var(--border);font-size:.9rem}
+        th{color:var(--muted);font-size:.75rem;text-transform:uppercase}
+        tr:hover{background:rgba(59,130,246,.05)}
+        .empty{padding:3rem;text-align:center;color:var(--muted)}
+        .empty a{color:#60a5fa;text-decoration:none;font-weight:600}
+        .progress{height:10px;background:#1a2542;border-radius:5px;overflow:hidden;margin-top:.5rem}
+        .prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--ok));transition:.5s;width:0%}
+        .chart-h{height:280px;position:relative;margin-top:1rem}
+        @media(max-width:1024px){.grid{grid-template-columns:1fr}aside{display:none}.stats{grid-template-columns:repeat(2,1fr)}}
     </style>
 </head>
-<body class="{% if current_user.dark_mode %}dark{% endif %}">
-<div class="layout">
+<body>
+<div class="grid">
     <aside>
-        <h2>💰 GroupGain</h2>
+        <div class="logo">📈 GroupGain</div>
         <nav>
-            <a href="{{ url_for('dashboard') }}" class="active">📊 Dashboard</a>
-            <a href="{{ url_for('add_trade') }}">➕ Add Trade</a>
+            <a href="{{ url_for('dashboard') }}" class="active">📊 Overview</a>
+            <a href="{{ url_for('add_trade') }}">➕ New Trade</a>
             {% if not current_user.group_id %}
             <a href="{{ url_for('create_group') }}">🏗️ Create Group</a>
             {% endif %}
             {% if current_user.group_id %}
-            <a href="#">👥 Group</a>
+            <a href="{{ url_for('leave_group') }}" style="color:#f87171">🚪 Leave Group</a>
             {% endif %}
-            <a href="{{ url_for('logout') }}">🚪 Logout</a>
         </nav>
+        <div style="margin-top:auto;padding-top:1rem;border-top:1px solid var(--border)">
+            <a href="{{ url_for('logout') }}" style="color:var(--muted);text-decoration:none">🚪 Logout</a>
+        </div>
     </aside>
-
     <main>
-        <div class="top-bar">
-            <h1>Welcome, {{ current_user.username }}</h1>
-            <div class="actions">
-                <a href="{{ url_for('export_csv') }}">📥 Export CSV</a>
-                <a href="{{ url_for('toggle_theme') }}">🌙</a>
+        <div class="top">
+            <div>
+                <h1>Welcome back, {{ current_user.username }} 👋</h1>
+                <p style="color:var(--muted);margin-top:.25rem">Your trading performance</p>
+            </div>
+            <div style="display:flex;gap:.75rem;align-items:center">
+                <a href="{{ url_for('export_csv') }}" class="btn btn-ghost">📥 Export</a>
+                <a href="{{ url_for('add_trade') }}" class="btn btn-primary">+ Add Trade</a>
+                <a href="{{ url_for('toggle_theme') }}" style="font-size:1.3rem;color:var(--muted);text-decoration:none">🌙</a>
             </div>
         </div>
 
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for msg in messages %}
-                    <div class="flash">{{ msg }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+        {% with m=get_flashed_messages() %}{%if m%}{%for x in m%}<div class="flash">{{x}}</div>{%endfor%}{%endif%}{%endwith%}
 
         {% if group %}
-        <div class="card" style="margin-bottom: 1.5rem;">
-            <h3>{{ group.name }} — Group Total P&L</h3>
-            <div class="value {% if group_total >= 0 %}positive{% else %}negative{% endif %}">
-                £{{ "%.2f"|format(group_total) }}
-            </div>
-            {% if group.goal_amount > 0 %}
-            <div style="margin-top: 0.75rem;">
-                <span>Goal: £{{ "%.2f"|format(group.goal_amount) }}</span>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ goal_progress }}%;"></div>
+        <div class="panel" style="padding:1.5rem;margin-bottom:2rem">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <div><strong>{{ group.name }}</strong> — Group Total:
+                    <span class="{% if group_total>=0 %}up{%else%}down{%endif%}" style="margin-left:.5rem;font-size:1.2rem">£{{ "%.2f"|format(group_total) }}</span>
                 </div>
-                <small>{{ "%.1f"|format(goal_progress) }}% complete</small>
+                {% if group.goal_amount>0 %}<div>Goal: £{{ "%.2f"|format(group.goal_amount) }} — <strong>{{ "%.1f"|format(goal_progress) }}%</strong></div>{%endif%}
             </div>
-            {% endif %}
+            {% if group.goal_amount>0 %}<div class="progress"><div class="prog-fill" style="width:{{ goal_progress }}%"></div></div>{%endif%}
         </div>
         {% endif %}
 
-        <div class="grid">
-            <div class="card">
-                <h3>Your Trades</h3>
-                <div class="value">{{ user_trades|length }}</div>
-            </div>
-            <div class="card">
-                <h3>Group Members</h3>
-                <div class="value">{{ leaderboard|length }}</div>
-            </div>
-            <div class="card">
-                <h3>Your Total P&L</h3>
-                {% set your_pnl = namespace(val=0) %}
-                {% for t in user_trades %}
-                    {% if t.pnl %}{% set your_pnl.val = your_pnl.val + t.pnl %}{% endif %}
-                {% endfor %}
-                <div class="value {% if your_pnl.val >= 0 %}positive{% else %}negative{% endif %}">
-                    £{{ "%.2f"|format(your_pnl.val) }}
-                </div>
-            </div>
+        <div class="stats">
+            <div class="stat"><div style="color:var(--muted);font-size:.8rem;text-transform:uppercase">Total Trades</div><div class="stat-val">{{ user_trades|length }}</div></div>
+            <div class="stat"><div style="color:var(--muted);font-size:.8rem;text-transform:uppercase">Net P&L</div><div class="stat-val {% if total_pnl>=0 %}up{%else%}down{%endif%}">£{{ "%.2f"|format(total_pnl) }}</div></div>
+            <div class="stat"><div style="color:var(--muted);font-size:.8rem;text-transform:uppercase">Win Rate</div><div class="stat-val">{{ "%.0f"|format(win_rate) }}%</div><div style="color:var(--muted);font-size:.85rem">{{ win_count }}/{{ closed_count }}</div></div>
+            <div class="stat"><div style="color:var(--muted);font-size:.8rem;text-transform:uppercase">Group Members</div><div class="stat-val">{{ leaderboard|length }}</div></div>
         </div>
 
-        {% if user_trades %}
-        <div class="card">
-            <h3>Your Performance</h3>
-            <div class="chart-container">
-                <canvas id="myChart"></canvas>
-            </div>
+        {% if cumulative_data|length>1 %}
+        <div class="panel" style="padding:1.5rem;margin-bottom:2rem">
+            <h3>Cumulative Performance</h3>
+            <div class="chart-h"><canvas id="perf"></canvas></div>
         </div>
         {% endif %}
 
-        {% if leaderboard %}
-        <div class="card" style="margin-top: 1.5rem;">
-            <h3>🏆 Leaderboard</h3>
+        {% if leaderboard|length>0 %}
+        <div class="panel">
+            <div class="ph">🏆 Leaderboard</div>
             <table>
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Member</th>
-                        <th>Trades</th>
-                        <th>Total P&L</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for u in leaderboard %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>{{ u.username }}</td>
-                        <td>{{ u.trade_count or 0 }}</td>
-                        <td class="{% if u.total_pnl >= 0 %}positive{% else %}negative{% endif %}">
-                            £{{ "%.2f"|format(u.total_pnl or 0) }}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+                <tr><th>Rank</th><th>Trader</th><th>Trades</th><th>Wins</th><th>Win Rate</th><th>P&L</th></tr>
+                {%for u in leaderboard%}<tr>
+                    <td><strong>#{{loop.index}}</strong></td><td>{{u.username}}</td><td>{{u.trade_count}}</td><td>{{u.win_count}}</td>
+                    <td>{{"%.0f"|format(u.win_rate)}}%</td><td class="{%if u.total_pnl>=0%}up{%else%}down{%endif%}">£{{"%.2f"|format(u.total_pnl)}}</td>
+                </tr>{%endfor%}
             </table>
         </div>
-        {% endif %}
+        {%endif%}
 
-        <div class="card" style="margin-top: 1.5rem;">
-            <h3>Your Recent Trades</h3>
-            {% if user_trades %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>Type</th>
-                        <th>Entry</th>
-                        <th>Exit</th>
-                        <th>Qty</th>
-                        <th>P&L</th>
-                        <th>Date</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in user_trades[:10] %}
-                    <tr>
-                        <td><strong>{{ t.symbol }}</strong></td>
-                        <td>{{ t.asset_type }}</td>
-                        <td>{{ "%.2f"|format(t.entry_price) }}</td>
-                        <td>{{ "%.2f"|format(t.exit_price) if t.exit_price else '—' }}</td>
-                        <td>{{ t.quantity }}</td>
-                        <td class="{% if t.pnl >= 0 %}positive{% else %}negative{% endif %}">
-                            {{ "%.2f"|format(t.pnl) if t.pnl else 'Open' }}
-                        </td>
-                        <td>{{ t.created_at.strftime('%d/%m %H:%M') }}</td>
-                        <td>
-                            <a href="{{ url_for('edit_trade', tid=t.id) }}">✏️</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+        <div class="panel">
+            <div class="ph" style="display:flex;justify-content:space-between;align-items:center">
+                <span>📋 Recent Trades</span>
+                <a href="{{ url_for('add_trade') }}" class="btn btn-primary" style="padding:.4rem .8rem;font-size:.85rem">+ Add</a>
+            </div>
+            {%if user_trades%}<table>
+                <tr><th>Asset</th><th>Type</th><th>Entry</th><th>Exit</th><th>Size</th><th>P&L</th><th>Date</th><th></th></tr>
+                {%for t in user_trades[:10]%}<tr>
+                    <td><strong>{{t.symbol}}</strong></td><td>{{t.asset_type}}</td><td>{{"%.2f"|format(t.entry_price)}}</td>
+                    <td>{{"%.2f"|format(t.exit_price) if t.exit_price else '<span style="color:#60a5fa">Open</span>'|safe}}</td>
+                    <td>{{t.quantity}}</td>
+                    <td class="{%if t.pnl is none%}{%elif t.pnl>=0%}up{%else%}down{%endif%}">
+                        {%if t.pnl is none%}—{%else%}£{{"%.2f"|format(t.pnl)}}{%endif%}
+                    </td>
+                    <td style="font-size:.85rem;color:var(--muted)">{{t.created_at.strftime('%d/%m %H:%M')}}</td>
+                    <td><a href="{{url_for('edit_trade',tid=t.id)}}" style="color:var(--muted)">✏️</a></td>
+                </tr>{%endfor%}
             </table>
-            {% else %}
-            <p style="color: var(--muted); margin-top: 1rem;">No trades yet. <a href="{{ url_for('add_trade') }}" style="color: var(--accent);">Add your first trade →</a></p>
-            {% endif %}
+            {%else%}<div class="empty"><p>No trades yet.</p><a href="{{url_for('add_trade')}}">→ Add your first trade</a></div>{%endif%}
         </div>
 
-        <div class="card" style="margin-top: 1.5rem;">
-            <h3>📂 Import Trades (CSV)</h3>
-            <form action="{{ url_for('import_csv') }}" method="post" enctype="multipart/form-data" style="margin-top: 1rem;">
+        <div class="panel" style="padding:1.5rem">
+            <h3>📂 Import CSV</h3>
+            <form action="{{url_for('import_csv')}}" method="post" enctype="multipart/form-data" style="margin-top:1rem;text-align:center;padding:1.5rem;border:2px dashed var(--border);border-radius:var(--r)">
                 <input type="file" name="csv_file" accept=".csv" required>
-                <button type="submit" style="margin-top: 0.75rem; padding: 0.5rem 1rem; background: var(--accent); color: white; border: none; border-radius: 0.5rem; cursor: pointer;">Upload & Import</button>
+                <button type="submit" class="btn btn-primary" style="margin-top:1rem">Upload & Import</button>
             </form>
         </div>
     </main>
 </div>
 
 <script>
-const rawData = [
-  {% for t in user_trades|reverse %}
-    {{ t.pnl or 0 }}{% if not loop.last %},{% endif %}
-  {% endfor %}
-];
-const rawLabels = [
-  {% for t in user_trades|reverse %}
-    "{{ t.created_at.strftime('%d/%m') }}"{% if not loop.last %},{% endif %}
-  {% endfor %}
-];
-
-const ctx = document.getElementById('myChart');
-if (ctx && rawData.length > 0) {
-  let cumulative = [];
-  let running = 0;
-  for (let val of rawData) {
-    running += val;
-    cumulative.push(running);
-  }
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: rawLabels,
-      datasets: [{
-        label: 'Cumulative P&L',
-        data: cumulative,
-        borderColor: '#16a34a',
-        backgroundColor: 'rgba(22, 163, 74, 0.1)',
-        fill: true,
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false } },
-        y: { grid: { color: 'rgba(100, 116, 139, 0.1)' } }
-      }
-    }
-  });
-}
+{%if cumulative_data|length>1%}
+new Chart(document.getElementById('perf'),{type:'line',data:{
+    labels:{{cumulative_data|map(attribute='date')|list|tojson}},
+    datasets:[{label:'P&L £',data:{{cumulative_data|map(attribute='val')|list|tojson}},
+    borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.1)',fill:true,tension:.3,pointRadius:4}]
+},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+scales:{x:{grid:{color:'rgba(123,138,184,.1)'},ticks:{color:'#7b8ab8'}},
+y:{grid:{color:'rgba(123,138,184,.1)'},ticks:{color:'#7b8ab8'}}}}});
+{%endif%}
 </script>
 </body>
 </html>
