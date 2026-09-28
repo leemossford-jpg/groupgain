@@ -171,6 +171,7 @@ def add_entry():
 @login_required
 def calendar_view():
     today = date.today()
+    
     # Get year/month from URL params OR use today
     year = request.args.get("year", today.year, type=int)
     month = request.args.get("month", today.month, type=int)
@@ -186,6 +187,7 @@ def calendar_view():
     cal = calendar.monthcalendar(year, month)
     month_name = calendar.month_name[month]
     
+    # Get all entries for current user
     entries = {}
     for e in DailyEntry.query.filter_by(user_id=current_user.id).all():
         entries[e.date] = e
@@ -197,7 +199,7 @@ def calendar_view():
         calendar_weeks=cal,
         entries=entries,
         today=today,
-        date=date  # ← THIS WAS MISSING! Causes template crash
+        date=date
     )
 
 @app.route("/edit-entry/<int:eid>", methods=["POST"])
